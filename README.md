@@ -12,7 +12,35 @@ publisher HTTPS origin → WebSub notification → Pull-PDS fetch + validate
                                             → relay / independent reader
 ```
 
-**Peer Telemetry is the example application.** It demonstrates small aggregate service observations. The demo may contain synthetic data and is not a provider status authority. This project publishes AT Protocol records; custom records do not automatically appear as posts in the Bluesky app.
+## Who might use this
+
+Pull-PDS fits publishers whose data is small, public, changes on a schedule, and can already be served as a static file:
+
+- **Open-data publishers**: a city publishing transit disruptions, air-quality readings, or reservoir levels from the same static site that hosts its open-data portal.
+- **Research and benchmark results**: a lab or leaderboard publishing evaluation scores as signed, attributable records that anyone can index, instead of a table on a web page.
+- **Project release feeds**: an open-source project publishing releases, changelogs, or security advisories from its documentation site.
+- **Community listings**: a club, venue, or meetup group publishing an event calendar without running a server.
+- **Measurement collectives**: groups that pool aggregated observations, such as network reachability or API error counts, where each member publishes under its own domain. The demo below uses this case with synthetic data.
+
+In each case the publisher keeps a static host and a domain, and gets AT Protocol records that apps, feeds, and indexers can consume. The records use custom collections, so they do not automatically appear as posts in the Bluesky app; an app has to be built to read them.
+
+## See it working
+
+A demo publisher, `did:web:didwebuser1.0rs.org`, is a static HTTPS host. It publishes synthetic aggregated API error counts. Its snapshot was pulled into the shared Pull-PDS at `p2.0rs.org`. The same record appears at each step:
+
+1. **Identity** (static file): [`didwebuser1.0rs.org/.well-known/did.json`](https://didwebuser1.0rs.org/.well-known/did.json) names the signing key and points the account at `https://p2.0rs.org`.
+2. **Snapshot** (static file): [`didwebuser1.0rs.org/atproto/feed.json`](https://didwebuser1.0rs.org/atproto/feed.json) is plain JSON on the publisher's host.
+3. **AT Protocol record** (served by the Pull-PDS): [`getRecord` for `app.omniroute.errorReport/openai`](https://p2.0rs.org/xrpc/com.atproto.repo.getRecord?repo=did:web:didwebuser1.0rs.org&collection=app.omniroute.errorReport&rkey=openai) returns the `openai` record from the snapshot, now addressed as `at://did:web:didwebuser1.0rs.org/app.omniroute.errorReport/openai` with a content ID.
+4. **Signed repository**: [`sync.getRepo`](https://p2.0rs.org/xrpc/com.atproto.sync.getRepo?did=did:web:didwebuser1.0rs.org) returns the CAR file. Verify it yourself with no access to the server:
+
+   ```sh
+   npm run build
+   PUBLISHER_DID=did:web:didwebuser1.0rs.org npm run example:verify
+   ```
+
+   The verifier resolves the DID, checks the commit signature and Merkle tree, and prints the records (`"verified": true`).
+
+The demo data is a dated synthetic run from 2026-07-31 that uses the legacy `app.omniroute.errorReport` collection, and the demo server runs an older revision than this repository. It shows the publishing path; it is not a live status feed. Links were last checked on 2026-09-23.
 
 ## Try it
 
@@ -44,7 +72,7 @@ Then check the descriptor:
 curl --fail https://pds.example.com/.well-known/atproto-pull-pds
 ```
 
-The quickstart document covers generating the publisher site, publishing, and verifying the result. The specification document describes the implemented wire format and limits. The security document explains the trust model and safe key handling.
+[QUICKSTART.md](QUICKSTART.md) covers generating the publisher site, publishing, and verifying the result. [SPEC.md](SPEC.md) describes the implemented wire format and limits. [SECURITY.md](SECURITY.md) explains the trust model and safe key handling.
 
 ## What is implemented
 
@@ -66,9 +94,9 @@ This is a research demo with a partial PDS surface, not a drop-in Bluesky accoun
 
 ## Evidence
 
-July 2026 experiment artifacts recorded 240 matching relay observations across four repositories and 80 distinct commit CIDs. A separate historical soak reported roughly 100 MB PDS RSS under light load, 65 ms local median latency, and 392 ms median latency for Jetstream notification plus verification. These were synthetic runs, with colocated components and different revisions; they are not fresh measurements of this release, universal latency promises, or a comparative cost benchmark.
+July 2026 experiment artifacts ([relay observations](experiments/results/relay-propagation/bsky-network-firehose-hits.jsonl)) recorded 240 matching relay observations across four repositories and 80 distinct commit CIDs. A separate historical soak reported roughly 100 MB PDS RSS under light load, 65 ms local median latency, and 392 ms median latency for Jetstream notification plus verification. These were synthetic runs, with colocated components and different revisions; they are not fresh measurements of this release, universal latency promises, or a comparative cost benchmark.
 
-The evidence document separates those historical results from current local checks. Reproduce publication and independent verification before announcing a live deployment.
+[docs/EVIDENCE.md](docs/EVIDENCE.md) separates those historical results from current local checks. Reproduce publication and independent verification before announcing a live deployment.
 
 ## Development
 

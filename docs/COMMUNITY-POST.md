@@ -12,7 +12,7 @@ I've been experimenting with a small publishing path for AT Protocol: host a DID
 
 The motivation is to make small public-data publishers cheap and simple to operate. The publisher can be a static site; repository machinery lives on a shared server. This is a hypothesis about reducing publisher-side overhead, not a benchmark claiming to beat other PDS implementations on cost.
 
-Peer Telemetry is the example application, with clearly synthetic aggregate observations. The reusable part is the static-JSON publishing path. These are custom AT Protocol records, so they don't automatically become posts in the Bluesky app.
+It suits small public datasets that already live on a static site: open-data portals, benchmark results, project release feeds, event listings. The demo publisher uses clearly synthetic aggregated API error counts. These are custom AT Protocol records, so they don't automatically become posts in the Bluesky app.
 
 The trust tradeoff is explicit: publishers delegate signing to the PDS, which can forge their records. HTTPS domain control gives attribution, not truth or Sybil resistance. This is an experimental partial PDS, with shared keys and snapshot ingestion only.
 
