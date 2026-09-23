@@ -8,7 +8,7 @@ import { newKeypair } from './helpers.js';
 import type { DesiredRecord } from '../src/repo/diff.js';
 
 const DID = 'did:web:node.test.example';
-const COLL = 'app.omniroute.errorReport';
+const COLL = 'com.example.custom.record';
 
 async function newManager() {
   const kp = await newKeypair();

@@ -14,7 +14,7 @@ import { SqliteRepoStorage } from '../storage/sqlite-repo-store.js';
 import { diffSnapshot, dataKey, type DesiredRecord } from './diff.js';
 
 /**
- * The design-neutral commit pipeline (pull-pds-spec.md §5 steps 6-8), everything
+ * The design-neutral commit pipeline, everything
  * *above* the signature. It:
  *   - loads (or lazily creates) the repo from storage,
  *   - reads the current record set (for the diff engine),
@@ -23,8 +23,7 @@ import { diffSnapshot, dataKey, type DesiredRecord } from './diff.js';
  *   - persists blocks + the commit-log row,
  *   - exports CAR slices for the firehose and getRepo.
  *
- * `rev` is a TID seeded from the persisted last rev (QUESTIONS.md D2 / FINDINGS
- * F-D2): `TID.next(prev)` guarantees the new TID is strictly greater than the
+ * `rev` is a TID seeded from the persisted last rev: `TID.next(prev)` guarantees the new TID is strictly greater than the
  * previous even if the wall clock regressed across a restart.
  */
 export class RepoManager {

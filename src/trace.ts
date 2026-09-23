@@ -1,7 +1,7 @@
 import { appendFileSync } from 'node:fs';
 
 /**
- * Opt-in JSONL tracing for the PHASE-4 latency experiment. When `TRACE_FILE` is
+ * Opt-in JSONL tracing for latency experiments. When `TRACE_FILE` is
  * set, each hop (hub receipt, aggregator ingest stages, AppView index) appends
  * one line so the soak harness can reconstruct the per-hop, per-ping timeline
  * without any in-band side channel - the correlation key (did, seq) travels

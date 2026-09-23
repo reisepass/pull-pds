@@ -75,7 +75,7 @@ describe('verifyCommit', () => {
   });
 
   it('after key rotation, the old commit fails against the new doc (no audit log)', async () => {
-    // DESIGN.md section 4: we verify against the *current* document, so a commit
+    // We verify against the *current* document, so a commit
     // signed by the pre-rotation key is orphaned once the doc advertises a new key.
     const oldKey = await newKeypair();
     const newKey = await newKeypair();

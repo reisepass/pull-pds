@@ -2,7 +2,7 @@ import { EventEmitter } from 'node:events';
 import type { SequencerStore, SequencedEvent } from '../storage/types.js';
 
 /**
- * The durable, monotonic firehose sequencer (NEXT-TASK step 4).
+ * The durable, monotonic firehose sequencer.
  *
  * Wraps a `SequencerStore` (persistence) with an in-process `EventEmitter` (live
  * fan-out). Every emitted firehose frame is:
@@ -45,8 +45,8 @@ export class Sequencer {
    * the store in pages, then live. `signal` aborts it (socket close).
    *
    * A single persistent listener buffers every live event for the whole lifetime
-   * of the stream, and a wakeup promise unblocks the consumer. This is the fix
-   * for FINDINGS: a naive `emitter.once()` per iteration drops any event emitted
+   * of the stream, and a wakeup promise unblocks the consumer. This avoids a
+   * real bug: a naive `emitter.once()` per iteration drops any event emitted
    * synchronously while the generator is suspended at a `yield` (no listener is
    * attached at that instant). Buffering unconditionally, and deduping by a
    * monotonic `lastDelivered`, closes both the backfill/live handoff gap and the
@@ -58,7 +58,7 @@ export class Sequencer {
     pageSize = 500,
     opts: { wantedCollections?: string[] } = {},
   ): AsyncGenerator<SequencedEvent> {
-    // REDESIGN-TASK §3: an optional collection filter. Backfill pushes it into
+    // An optional collection filter. Backfill pushes it into
     // SQL (cheap); the live path matches the CBOR frame bytes for the NSID so a
     // filtered subscriber is never handed — and never buffers — a frame outside
     // its collections. Unfiltered when absent (the standard firehose).

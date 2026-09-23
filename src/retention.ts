@@ -1,7 +1,7 @@
 import { log } from './log.js';
 
 /**
- * Retention pruning (REDESIGN-TASK §2). One cheap PERIODIC pass — never on the
+ * Retention pruning. One cheap PERIODIC pass — never on the
  * write path — that caps every store at 6 months of age OR ~0.5 GB on disk,
  * whichever hits first. Each store implements `pruneRetention` with a batched
  * DELETE (bounded per batch so one pass never holds the DB for long), and the

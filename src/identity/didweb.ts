@@ -116,7 +116,7 @@ export interface ParsedDidWeb {
  * Parse `did:web:host[%3Aport]` into the did.json URL.
  *
  * atproto supports hostname-only did:web, so any additional colon-separated
- * path segments are rejected (BRIEF: "Reject path components"). Ports are
+ * path segments are rejected. Ports are
  * rejected unless the host is `localhost` and the config allows it.
  */
 export function parseDidWeb(did: string, config: ResolverConfig): ParsedDidWeb {
@@ -274,7 +274,7 @@ export function validateDidDocument(
     throw new DidWebError('invalid-document', 'PDS serviceEndpoint is not a string');
   }
 
-  // The endpoint must be exactly the hostname we serve (DESIGN.md decision 6).
+  // The endpoint must be exactly the hostname we serve.
   // The AppView/indexer sets skipEndpointCheck: it is not a PDS and resolves any
   // publisher's doc just to read the #atproto key.
   if (!config.skipEndpointCheck && !endpointsEqual(pds.serviceEndpoint, config.serviceEndpoint)) {

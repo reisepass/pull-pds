@@ -3,7 +3,7 @@ import { isBlockedAddress } from '../src/net/ssrf.js';
 
 /**
  * SSRF address predicate, including the IPv6-encoding bypasses that a naive
- * dotted-decimal-only check misses (FINDINGS F-4). Every alternative spelling of
+ * dotted-decimal-only check misses. Every alternative spelling of
  * a blocked v4 address must be blocked; genuine public addresses must pass.
  */
 

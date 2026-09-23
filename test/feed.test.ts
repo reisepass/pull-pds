@@ -1,9 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import { parseFeed, FeedError } from '../src/pds-websub/feed.js';
 import { buildRecordValidator } from '../src/pds-websub/lexicon-validate.js';
+import { EXAMPLE_READING_NSID as READING } from '../src/collections.js';
 import { parseFeed, FeedError } from '../src/pds-websub/feed.js';
 import { buildRecordValidator } from '../src/pds-websub/lexicon-validate.js';
-const COLL = 'app.omniroute.errorReport';
+// A custom collection with no bundled lexicon: structural checks only.
+const COLL = 'com.example.custom.record';
 const DID = 'did:web:node.test.example';
 const opts = { expectedDid: DID, allowedCollections: [COLL], maxRecords: 100 };
 const enc = (o: unknown) => new TextEncoder().encode(JSON.stringify(o));
@@ -66,37 +68,33 @@ describe('parseFeed - record-level rejects (batch atomic)', () => {
   );
 });
 
-describe('parseFeed - lexicon validation (SPEC-COMPLIANCE §4, F-2/Q6 closed)', () => {
+describe('parseFeed - lexicon validation against a bundled lexicon', () => {
   const validate = buildRecordValidator();
-  const vopts = { ...opts, validateRecord: validate };
-  // The settled canonical shape (REDESIGN-TASK §1).
+  const vopts = { ...opts, allowedCollections: [READING, COLL], validateRecord: validate };
   const good = {
-    $type: COLL,
-    provider: 'openai',
-    model: 'gpt-4',
-    window: '5m',
-    errors: [{ code: '429', count: 5 }],
-    totalErrors: 5,
+    $type: READING,
+    sensorId: 'station-7',
+    metric: 'co2',
+    value: 412,
+    unit: 'ppm',
     observedAt: '2026-07-21T00:00:00.000Z',
-    seq: 1,
-    emittedAt: '2026-07-21T00:00:00.000Z',
   };
-  const one = (record: unknown) => feed([{ collection: COLL, rkey: 'current', record }]);
+  const one = (record: unknown) => feed([{ collection: READING, rkey: 'current', record }]);
 
-  it('a valid settled-shape record passes and enters the batch', () => {
+  it('a valid record passes and enters the batch', () => {
     const r = parseFeed(one(good), vopts);
     expect(r.records).toHaveLength(1);
-    expect(r.records[0]).toMatchObject({ collection: COLL, rkey: 'current' });
+    expect(r.records[0]).toMatchObject({ collection: READING, rkey: 'current' });
   });
 
   it('a bad field TYPE is rejected (lexicon-invalid), nothing reaches the MST', () => {
-    const bad = { ...good, totalErrors: 'five' };
+    const bad = { ...good, value: 'high' };
     expect(code(() => parseFeed(one(bad), vopts))).toBe('lexicon-invalid');
   });
 
   it('a MISSING required field is rejected (lexicon-invalid)', () => {
     const missing = { ...good } as Record<string, unknown>;
-    delete missing.totalErrors;
+    delete missing.value;
     expect(code(() => parseFeed(one(missing), vopts))).toBe('lexicon-invalid');
   });
 
@@ -106,11 +104,11 @@ describe('parseFeed - lexicon validation (SPEC-COMPLIANCE §4, F-2/Q6 closed)', 
   });
 
   it('the whole batch rejects atomically when ONE of several records is invalid', () => {
-    const bad = { ...good, totalErrors: 'five' };
+    const bad = { ...good, value: 'high' };
     const mixed = feed([
-      { collection: COLL, rkey: 'good1', record: good },
-      { collection: COLL, rkey: 'bad', record: bad },
-      { collection: COLL, rkey: 'good2', record: { ...good, provider: 'anthropic' } },
+      { collection: READING, rkey: 'good1', record: good },
+      { collection: READING, rkey: 'bad', record: bad },
+      { collection: READING, rkey: 'good2', record: { ...good, sensorId: 'station-8' } },
     ]);
     // A FeedError is thrown, so parseFeed returns NO records at all - the caller
     // never gets a partial batch, so nothing (not even the two valid records)
@@ -136,10 +134,14 @@ describe('parseFeed - lexicon validation (SPEC-COMPLIANCE §4, F-2/Q6 closed)', 
     expect(msg).toMatch(/unknown field "surprise"/);
   });
 
-  it('without a validator, deep validation is skipped (structural only, back-compat)', () => {
-    // The old shape has no required fields met, but with no validateRecord it is
-    // accepted as a structurally-valid JSON object.
-    expect(code(() => parseFeed(one({ $type: COLL, count429: 5 }), opts))).toBe('NO-THROW');
+  it('without a validator, deep validation is skipped (structural only)', () => {
+    const noValidator = { ...vopts, validateRecord: undefined };
+    expect(code(() => parseFeed(one({ $type: READING, value: 'high' }), noValidator))).toBe('NO-THROW');
+  });
+
+  it('a collection without a bundled lexicon receives structural checks only', () => {
+    const custom = feed([{ collection: COLL, rkey: 'a', record: { $type: COLL, anything: 1 } }]);
+    expect(code(() => parseFeed(custom, vopts))).toBe('NO-THROW');
   });
 });
 
@@ -164,40 +166,5 @@ describe('parseFeed - no prototype pollution', () => {
   it('a __proto__ key in a record does not pollute Object.prototype', () => {
     parseFeed(feed([{ collection: COLL, rkey: 'a', record: { $type: COLL, ['__proto__']: { polluted: true } } }]), opts);
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
-  });
-});
-
-describe('parseFeed - lexicon validation seam (unified schema, ISP-SERVICETYPE)', () => {
-  const EM = 'org.peertelemetry.errorMetrics';
-  const emOpts = { expectedDid: DID, allowedCollections: [EM], maxRecords: 100 };
-  const validate = buildRecordValidator();
-  const withValidator = { ...emOpts, validateRecord: validate };
-  const nowUs = Date.parse('2026-07-27T12:00:00Z') * 1000;
-  const goodIsp = {
-    $type: EM, serviceType: 'isp', 'gen_ai.provider.name': 'telekom',
-    windowStartUnixMicro: nowUs, windowEndUnixMicro: nowUs + 300000000,
-    errors: [{ code: 'link_down', count: 1 }], totalErrors: 1, requestVolumeBucket: '100-999',
-    'telemetry.distro.name': 'netreport-sim', observedAt: '2026-07-27T12:00:00.000Z',
-    emittedAt: '2026-07-27T12:00:00.100Z', seq: 1,
-  };
-
-  it('accepts a schema-valid isp errorMetrics record', () => {
-    expect(code(() => parseFeed(feed([{ collection: EM, rkey: 'fiber.de-by', record: goodIsp }]), withValidator))).toBe('NO-THROW');
-  });
-  it('rejects a record with an undeclared field (homeIp) as lexicon-invalid', () => {
-    const leak = { ...goodIsp, homeIp: '84.1.2.3' };
-    expect(code(() => parseFeed(feed([{ collection: EM, rkey: 'fiber.de-by', record: leak }]), withValidator))).toBe('lexicon-invalid');
-  });
-  it('is batch-atomic: one lexicon-invalid record fails the whole feed', () => {
-    const bad = { ...goodIsp, requestVolumeBucket: 'not-a-bucket' }; // outside the enum
-    const bytes = feed([
-      { collection: EM, rkey: 'ok', record: goodIsp },
-      { collection: EM, rkey: 'bad', record: bad },
-    ]);
-    expect(code(() => parseFeed(bytes, withValidator))).toBe('lexicon-invalid');
-  });
-  it('without a validator the record passes structural checks only (back-compat)', () => {
-    const leak = { ...goodIsp, homeIp: '84.1.2.3' };
-    expect(code(() => parseFeed(feed([{ collection: EM, rkey: 'fiber.de-by', record: leak }]), emOpts))).toBe('NO-THROW');
   });
 });

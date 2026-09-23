@@ -133,7 +133,7 @@ export class Pds {
     // Late-bind the pipeline (it needs `pds.repoFor`).
     (pds as { pipeline: IngestPipeline }).pipeline = pipeline;
     pds.bootedAtMs = Date.now();
-    // REDESIGN-TASK §2: periodic retention pruning (6 months / 0.5 GB, whichever
+    // Periodic retention pruning (6 months / 0.5 GB, whichever
     // first). Runs every few minutes OFF the write path; enumerates the open
     // repo stores lazily so repos created after boot are covered. Cheap batched
     // DELETEs; logs what it prunes.

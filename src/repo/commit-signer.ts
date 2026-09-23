@@ -3,10 +3,10 @@ import type { Keypair, Signer } from '@atproto/crypto';
 /**
  * The one seam the two competing designs disagree about.
  *
- * DESIGN.md (self-sign): the did:web holder signs its own commit bytes; this
+ * Self-sign: the did:web holder signs its own commit bytes; this
  * server only ever *receives* a signature it did not produce.
- * pull-pds-spec.md (pull-aggregator): the aggregator holds the key and signs
- * every commit itself (spec section 5 step 8).
+ * Pull-PDS (the implemented model): the PDS holds the key and signs
+ * every commit itself.
  *
  * Everything in the commit pipeline *above* the signature - building the MST,
  * assembling the unsigned commit, DAG-CBOR encoding it - is byte-identical
@@ -42,7 +42,7 @@ export function asKeypair(signer: CommitSigner): Keypair {
 
 /**
  * Aggregator-model signer: wraps a local `@atproto/crypto` keypair and signs
- * commit bytes directly. This is the pull-pds-spec.md `AGG_SIGNING_KEY` path.
+ * commit bytes directly. This is the `PDS_SIGNING_KEY` path.
  * Trivial by construction - the key material lives here.
  */
 export class LocalKeyCommitSigner implements CommitSigner {
@@ -66,14 +66,14 @@ export type RemoteSignFn = (unsignedCommitBytes: Uint8Array) => Promise<Uint8Arr
 
 /**
  * Self-sign-model signer: the key lives with the did:web holder, not here. The
- * server hands out unsigned commit bytes and receives a signature back (DESIGN.md
- * write shape B: server builds, client signs, server assembles). We hold only
+ * server hands out unsigned commit bytes and receives a signature back
+ * (server builds, client signs, server assembles). We hold only
  * the holder's *public* did:key - enough to satisfy `@atproto/repo`'s did()
  * derivation and to record/verify which key signed - and delegate the actual
  * signing to the injected `RemoteSignFn`.
  *
  * The seam is defined now; the transport that carries bytes out and a signature
- * back is deferred until the fork is decided (per NEXT-TASK.md section 3).
+ * back is deferred until the fork is decided.
  */
 export class RemoteCommitSigner implements CommitSigner {
   constructor(

@@ -91,11 +91,8 @@ function page(title: string, body: string): string {
     ['/repos', 'Repos'],
     ['/firehose', 'Firehose'],
     ['/ingest-log', 'Ingest log'],
-    ['/experiment', 'Experiment'],
     ['/health', 'Health'],
     ['/readme', 'README'],
-    ['/findings', 'FINDINGS'],
-    ['/experiment-results', 'Results'],
   ]
     .map(([href, label]) => `<a href="${href}">${label}</a>`)
     .join('');
@@ -131,10 +128,7 @@ export async function renderUi(pds: Pds, path: string): Promise<UiResult | null>
   if (path === '/firehose') return html(200, firehosePage());
   if (path === '/ingest-log') return ingestLog(pds);
   if (path === '/health') return { status: 200, json: health(pds) };
-  if (path === '/experiment') return experiment();
   if (path === '/readme') return docPage('README.md', 'README');
-  if (path === '/findings') return docPage('FINDINGS.md', 'FINDINGS');
-  if (path === '/experiment-results') return docPage('EXPERIMENT-RESULTS.md', 'EXPERIMENT-RESULTS');
 
   // /repos/:did ... (did may itself contain slashes? no - it's URL-encoded)
   const m = path.match(/^\/repos\/([^/]+)(\/.*)?$/);
@@ -203,7 +197,6 @@ async function dashboard(pds: Pds): Promise<UiResult> {
   <a class="btn" href="/repos">Browse repos &rarr;</a>
   <a class="btn" href="/firehose" style="margin-left:8px">Live firehose &rarr;</a>
   <a class="btn" href="/ingest-log" style="margin-left:8px">Ingest log &rarr;</a>
-  <a class="btn" href="/experiment" style="margin-left:8px">Latest experiment &rarr;</a>
 </div>`;
   return html(200, page('pull-pds', body));
 }
@@ -436,32 +429,17 @@ function firehosePage(): string {
   return page('Firehose', body);
 }
 
-async function experiment(): Promise<UiResult> {
-  const fs = await import('node:fs/promises');
-  let text = '';
-  let ts = '';
-  try {
-    const path = new URL('../../experiments/last-run.txt', import.meta.url);
-    text = await fs.readFile(path, 'utf8');
-    const stat = await fs.stat(path);
-    ts = stat.mtime.toISOString();
-  } catch {
-    text = 'No experiment run captured yet (experiments/last-run.txt not found).';
-  }
-  const body = `
-<h1>Latest experiment run</h1>
-<div class="sub">Captured output of <span class="op">experiments/run.sh</span>${ts ? ' · ' + esc(ts) : ''}. Full CIDs/revs/signatures, never truncated.</div>
-<div class="card"><pre>${esc(text)}</pre></div>`;
-  return html(200, page('Experiment', body));
-}
-
 async function docPage(file: string, title: string): Promise<UiResult> {
   const fs = await import('node:fs/promises');
-  let text = '';
-  try {
-    text = await fs.readFile(new URL('../../' + file, import.meta.url), 'utf8');
-  } catch {
-    text = `${file} not found.`;
+  // Runs from src/server/ (tests) or dist/src/server/ (built), so try both depths.
+  let text = `${file} not found.`;
+  for (const up of ['../../', '../../../']) {
+    try {
+      text = await fs.readFile(new URL(up + file, import.meta.url), 'utf8');
+      break;
+    } catch {
+      /* try the next depth */
+    }
   }
   const body = `<h1>${esc(title)}</h1><div class="sub">${esc(file)} — rendered verbatim</div><div class="card"><pre>${esc(text)}</pre></div>`;
   return html(200, page(title, body));

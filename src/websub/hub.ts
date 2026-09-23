@@ -2,7 +2,7 @@ import { createHmac, randomBytes } from 'node:crypto';
 import { log } from '../log.js';
 
 /**
- * A WebSub hub (pull-pds-spec.md §4), REC-complete (REDESIGN-TASK §5). Two
+ * A WebSub hub, REC-complete. Two
  * responsibilities:
  *
  *  1. **Publish** (`hub.mode=publish`): a publisher pings "come read me" with the
@@ -82,7 +82,7 @@ const MIN_SECRET_BYTES = 16;
 const MAX_SECRET_BYTES = 256;
 
 /**
- * A9 (deliberate, documented REC deviation - FINDINGS F-A9). The REC §8 registers
+ * A9 (deliberate, documented deviation from the WebSub REC). The REC §8 registers
  * four `X-Hub-Signature` algorithms (`sha1`, `sha256`, `sha384`, `sha512`); we
  * offer exactly ONE, `sha256`. sha1 is broken; sha384/sha512 buy nothing for a
  * small JSON body and add a negotiation surface. This is the single algorithm we

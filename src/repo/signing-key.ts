@@ -4,7 +4,7 @@ import { LocalKeyCommitSigner, type CommitSigner } from './commit-signer.js';
 import { log } from '../log.js';
 
 /**
- * The PDS's own signing key (pull-pds-spec.md §10; env `PDS_SIGNING_KEY`, with
+ * The PDS's own signing key (env `PDS_SIGNING_KEY`, with
  * the legacy `AGG_SIGNING_KEY` still honoured as a deprecated alias).
  *
  * Under the pull-PDS model the PDS signs every commit with its own key, and
@@ -16,7 +16,7 @@ import { log } from '../log.js';
  *
  * KEY_MODE:
  *   - `shared` (spec default): one key signs every repo. Cheapest onboarding,
- *     but see FINDINGS F-D3 - the PDS can forge into any repo.
+ *     but the PDS can forge into any repo.
  * Per-publisher keys are not implemented; unsupported modes fail at boot.
  */
 export interface PdsKey {
@@ -43,7 +43,7 @@ export function pdsKeyFromKeypair(kp: Keypair): PdsKey {
  * Load the shared PDS signing key from `PDS_SIGNING_KEY` (canonical) or the
  * legacy `AGG_SIGNING_KEY` (deprecated alias, kept for live deployments; a
  * one-line deprecation warning is logged when the old name is used). With
- * neither set, generate an ephemeral one in dev (QUESTIONS.md D1). The env
+ * neither set, generate an ephemeral one in dev. The env
  * value is a hex-encoded secp256k1 private key (the form
  * `Secp256k1Keypair.import` accepts).
  *

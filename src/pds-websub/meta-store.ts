@@ -135,7 +135,7 @@ export class MetaStore implements EtagStore, SeenStore, AdmissionStore, Subscrip
 
   /**
    * Atomically reserve a slot for a *new* DID under its registrable domain's cap
-   * (FINDINGS F-5). The read-only `admitWrite` cap check is optimistic and
+   *. The read-only `admitWrite` cap check is optimistic and
    * TOCTOU-racy: two new DIDs on one domain can both pass it before either is
    * recorded. This method does the count-and-insert in a single SQLite
    * transaction, so the cap is enforced exactly. Returns true if the slot was

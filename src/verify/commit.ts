@@ -7,9 +7,9 @@ import type { ResolvedDidWeb } from '../identity/didweb.js';
  *
  * On success we record `keyMultikey` / `keyDidKey`: the exact key that verified
  * this commit, taken from the *current* document. did:web has no audit log
- * (DESIGN.md section 4), so this local record is the only thing that keeps a
+ *, so this local record is the only thing that keeps a
  * repo's history checkable after the holder rotates its key. Callers persist it
- * alongside the accepted commit (BRIEF key-rotation note).
+ * alongside the accepted commit.
  */
 export type CommitVerification =
   | {
@@ -34,13 +34,13 @@ export type CommitVerifyFailure =
  * Verify a signed commit against the `#atproto` key in an already-resolved
  * did:web document.
  *
- * We verify against the current document only (DESIGN.md section 4: verify
- * against the current doc, accept that a rotation orphans prior history) and
+ * We verify against the current document only (a key rotation
+ * therefore orphans prior history) and
  * report which key did the verifying so the caller can bind it to the commit.
  *
  * Crypto is delegated entirely to `@atproto/repo` / `@atproto/crypto` - the
  * commit is re-CBOR-encoded without its `sig` and checked against the did:key.
- * We never touch secp256k1 directly (BRIEF hard constraint).
+ * We never touch secp256k1 directly.
  */
 export async function verifyCommit(
   commit: Commit,

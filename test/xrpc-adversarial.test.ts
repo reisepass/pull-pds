@@ -12,7 +12,7 @@ import { createServer } from '../src/server/http.js';
  * in-memory store, localhost.
  */
 
-const COLL = 'app.omniroute.errorReport';
+const COLL = 'com.example.custom.record';
 let server: http.Server;
 let agg: Pds;
 let port: number;

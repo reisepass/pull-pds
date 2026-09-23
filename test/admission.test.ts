@@ -7,7 +7,7 @@ import {
 import type { AdmissionConfig } from '../src/config.js';
 
 const config: AdmissionConfig = {
-  collectionAllowlist: ['app.omniroute.errorReport'],
+  collectionAllowlist: ['com.example.custom.record'],
   maxDidsPerRegistrableDomain: 2,
   newDidRateLimit: { max: 2, windowMs: 1000 },
   globalNewDidRateLimit: { max: 3, windowMs: 1000 },
@@ -42,7 +42,7 @@ function clockAt(t: number): Clock {
 const req = {
   did: 'did:web:a.acme.com',
   host: 'a.acme.com',
-  collection: 'app.omniroute.errorReport',
+  collection: 'com.example.custom.record',
 };
 
 describe('admitWrite', () => {

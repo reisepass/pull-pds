@@ -16,7 +16,7 @@ import type { DesiredRecord } from '../src/repo/diff.js';
  */
 
 const DID = 'did:web:node.test.example';
-const COLL = 'app.omniroute.errorReport';
+const COLL = 'com.example.custom.record';
 
 function rec(rkey: string, n: number): DesiredRecord {
   return { collection: COLL, rkey, record: { $type: COLL, count429: n } };

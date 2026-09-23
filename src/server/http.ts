@@ -133,7 +133,7 @@ async function handle(
   // --- descriptor (spec §2.3) ---
   // `atproto-pull-pds` is canonical; `atproto-pull-aggregator` is the legacy
   // pre-rename path, still served IDENTICALLY as a deprecated alias so
-  // publishers already pointing at it keep working (SPEC-COMPLIANCE-TASK §1).
+  // publishers already pointing at it keep working.
   if (
     (path === '/.well-known/atproto-pull-pds' || path === '/.well-known/atproto-pull-aggregator') &&
     req.method === 'GET'
@@ -267,7 +267,7 @@ async function routeXrpc(pds: Pds, nsid: string, q: URLSearchParams): Promise<Xr
 /**
  * Stream the firehose to a WebSocket subscriber from an optional cursor.
  *
- * REDESIGN-TASK §3 (filtered subscription): an optional
+ * Filtered subscription: an optional
  * `?wantedCollections=nsid1,nsid2` query turns this into a collection-filtered,
  * Jetstream-style feed — the subscriber receives ONLY `#commit` frames whose
  * ops touch one of those collections. This is the cheap feed a resource-capped
@@ -299,7 +299,7 @@ function descriptor(pds: Pds): Record<string, unknown> {
   return {
     pdsDid: pds.config.pdsDid,
     // Deprecated pre-rename alias for `pdsDid`; kept so existing descriptor
-    // consumers do not break. Both carry the same value (SPEC-COMPLIANCE §1).
+    // consumers do not break. Both carry the same value.
     aggregatorDid: pds.config.pdsDid,
     signingPublicKeyMultibase: pds.pdsKey.publicKeyMultibase,
     atprotoPdsEndpoint: pds.config.selfEndpoint,

@@ -18,7 +18,7 @@ import { newKeypair } from './helpers.js';
  * seq equals the store-assigned seq.
  */
 
-const COLL = 'app.omniroute.errorReport';
+const COLL = 'com.example.custom.record';
 
 describe('firehose seq assignment under concurrency', () => {
   it('40 DIDs emitting concurrently produce a gap-free, unique, self-consistent seq stream', async () => {

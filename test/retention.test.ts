@@ -1,11 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { SqliteSequencerStore } from '../src/storage/sqlite-sequencer-store.js';
-import { IndexStore } from '../src/appview/index-store.js';
-import { GlobalStore } from '../src/globalindex/store.js';
 import { pruneStore, DEFAULT_RETENTION } from '../src/retention.js';
 
 /**
- * REDESIGN-TASK §2: retention pruning — 6 months OR 0.5 GB, whichever first.
+ * Retention pruning: 6 months OR 0.5 GB, whichever first.
  * Cheap, batched, age-then-size. These tests drive the store methods directly
  * with a synthetic clock via explicit ISO cutoffs (no timers, no sleeping).
  */
@@ -42,45 +40,6 @@ describe('retention pruning', () => {
     expect(rest.length).toBeLessThan(20);
     expect(rest.length).toBeGreaterThan(0);
     seq.close();
-  });
-
-  it('appview index: age-prunes old rejections and stale records', () => {
-    const store = new IndexStore(':memory:');
-    store.putRecord({
-      did: 'did:web:a', collection: 'app.omniroute.errorReport', rkey: '1',
-      cid: 'bafy1', recordJson: '{}', rev: 'r1', sourcePds: 'p2', sigVerified: true,
-      indexedAt: '2020-01-01T00:00:00.000Z',
-    });
-    store.recordRejection({ at: '2020-01-01T00:00:00.000Z', did: 'did:web:a', sourcePds: 'p2', rev: 'r0', reason: 'bad-sig' });
-    store.recordRejection({ at: new Date().toISOString(), did: 'did:web:b', sourcePds: 'p2', rev: 'r9', reason: 'bad-sig' });
-
-    const cutoff = new Date(Date.now() - DEFAULT_RETENTION.maxAgeMs).toISOString();
-    const removed = store.pruneOlderThan(cutoff, 5_000);
-    expect(removed).toBe(2); // 1 stale record + 1 old rejection
-    expect(store.recordCount()).toBe(0);
-    expect(store.recentRejections(10)).toHaveLength(1);
-    store.close();
-  });
-
-  it('global index: size-prune removes oldest events, keeps latest view', () => {
-    const g = new GlobalStore(':memory:');
-    const big = JSON.stringify({ pad: 'x'.repeat(2048) });
-    for (let i = 1; i <= 12; i++) {
-      g.putRecord({
-        seq: i, commitCid: `c${i}`, did: 'did:web:g', rev: `r${i}`, opAction: 'create',
-        collection: 'app.omniroute.errorReport', rkey: String(i), opCid: `o${i}`,
-        recordJson: big, sigOk: true, frameTime: new Date().toISOString(),
-        indexedAt: new Date().toISOString(), arrivedAt: new Date().toISOString(),
-        publisherSeq: i, publisherEmittedAt: new Date().toISOString(),
-      });
-    }
-    expect(g.eventCount()).toBe(12);
-    const removed = g.pruneToBytes(8 * 1024, 3);
-    expect(removed).toBeGreaterThan(0);
-    expect(g.eventCount()).toBeLessThan(12);
-    // latest_record (the live view) is never touched by size pruning.
-    expect(g.latestRecords().length).toBe(12);
-    g.close();
   });
 
   it('pruneStore reports per-store and never throws on a healthy store', () => {

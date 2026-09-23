@@ -3,7 +3,7 @@ import { Repo, cborToLexRecord } from '@atproto/repo';
 import type { Pds } from '../pds-websub/app.js';
 
 /**
- * The read + sync XRPC handlers (pull-pds-spec.md §6.2). Standard atproto, no
+ * The read + sync XRPC handlers. Standard atproto, no
  * deviations, so third-party tooling consumes the repos unmodified. Each handler
  * returns a small typed result the HTTP layer serialises (JSON or CAR bytes).
  *

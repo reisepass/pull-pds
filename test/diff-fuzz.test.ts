@@ -19,7 +19,7 @@ import type { DesiredRecord } from '../src/repo/diff.js';
  * unavailable) so failures are reproducible from the case index.
  */
 
-const COLL = 'app.omniroute.errorReport';
+const COLL = 'com.example.custom.record';
 const DID = 'did:web:fuzz.test.example';
 
 // A tiny deterministic PRNG (mulberry32) seeded per case.

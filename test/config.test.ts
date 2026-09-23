@@ -8,31 +8,30 @@ import { pdsConfigFromEnv } from '../src/pds-websub/config.js';
 import { loadSharedPdsKey } from '../src/repo/signing-key.js';
 
 describe('selfEndpointFromEnv', () => {
-  it('defaults to the canonical production endpoint when SELF_ENDPOINT is unset', () => {
+  it('defaults to a never-resolving placeholder when SELF_ENDPOINT is unset', () => {
     expect(selfEndpointFromEnv({})).toBe(PLACEHOLDER_SELF_ENDPOINT);
-    // QUESTIONS.md Q5 closed (REDESIGN-TASK §4): canonical = p2.0rs.org.
-    expect(PLACEHOLDER_SELF_ENDPOINT).toBe('https://p2.0rs.org');
+    expect(PLACEHOLDER_SELF_ENDPOINT).toBe('https://pds.example.invalid');
   });
 
-  it('defaults to the canonical endpoint when SELF_ENDPOINT is blank', () => {
+  it('defaults to the placeholder when SELF_ENDPOINT is blank', () => {
     expect(selfEndpointFromEnv({ SELF_ENDPOINT: '   ' })).toBe(PLACEHOLDER_SELF_ENDPOINT);
   });
 
   it('reads SELF_ENDPOINT from the environment when set', () => {
-    expect(selfEndpointFromEnv({ SELF_ENDPOINT: 'https://p3.0rs.org' })).toBe(
-      'https://p3.0rs.org',
+    expect(selfEndpointFromEnv({ SELF_ENDPOINT: 'https://pds-b.example.com' })).toBe(
+      'https://pds-b.example.com',
     );
   });
 });
 
 describe('resolverConfigFromEnv', () => {
   it('wires the env endpoint into the resolver config', () => {
-    const cfg = resolverConfigFromEnv({}, { SELF_ENDPOINT: 'https://p2.0rs.org' });
-    expect(cfg.serviceEndpoint).toBe('https://p2.0rs.org');
+    const cfg = resolverConfigFromEnv({}, { SELF_ENDPOINT: 'https://pds.example.com' });
+    expect(cfg.serviceEndpoint).toBe('https://pds.example.com');
     expect(cfg.allowLocalhost).toBe(false);
   });
 
-  it('falls back to the canonical endpoint with an empty env', () => {
+  it('falls back to the placeholder with an empty env', () => {
     const cfg = resolverConfigFromEnv({}, {});
     expect(cfg.serviceEndpoint).toBe(PLACEHOLDER_SELF_ENDPOINT);
   });
@@ -40,14 +39,14 @@ describe('resolverConfigFromEnv', () => {
   it('honours overrides over both env and defaults', () => {
     const cfg = resolverConfigFromEnv(
       { serviceEndpoint: 'https://override.example', allowLocalhost: true },
-      { SELF_ENDPOINT: 'https://p2.0rs.org' },
+      { SELF_ENDPOINT: 'https://pds.example.com' },
     );
     expect(cfg.serviceEndpoint).toBe('https://override.example');
     expect(cfg.allowLocalhost).toBe(true);
   });
 });
 
-describe('env back-compat aliases (pds-websub rename, SPEC-COMPLIANCE §1)', () => {
+describe('env back-compat aliases', () => {
   // A fixed 32-byte hex secp256k1 private key so both env-name paths derive the
   // SAME identity - proving the legacy alias is a true alias, not a new key.
   const KEYHEX = '0'.repeat(63) + '1';
@@ -78,5 +77,22 @@ describe('env back-compat aliases (pds-websub rename, SPEC-COMPLIANCE §1)', () 
       { PDS_SIGNING_KEY: KEYHEX, AGG_SIGNING_KEY: '0'.repeat(64) } as NodeJS.ProcessEnv,
     );
     expect(both.didKey).toBe(viaNew.didKey);
+  });
+});
+
+describe('Bluesky social namespaces are never accepted', () => {
+  it.each(['app.bsky.feed.post', 'app.bsky.feed.like', 'app.bsky.graph.follow', 'chat.bsky.convo.message', 'com.atproto.repo.strongRef'])(
+    'ALLOWED_COLLECTIONS containing %s fails configuration',
+    (nsid) => {
+      expect(() => pdsConfigFromEnv({}, { ALLOWED_COLLECTIONS: `com.example.sensor.reading,${nsid}` })).toThrow(/may not include/);
+    },
+  );
+
+  it('an override cannot smuggle a blocked collection past validation', () => {
+    expect(() => pdsConfigFromEnv({ allowedCollections: ['app.bsky.feed.post'] }, {})).toThrow(/may not include/);
+  });
+
+  it('look-alike namespaces outside the blocked prefixes are allowed', () => {
+    expect(pdsConfigFromEnv({}, { ALLOWED_COLLECTIONS: 'app.bskyish.data.item' }).allowedCollections).toEqual(['app.bskyish.data.item']);
   });
 });

@@ -26,7 +26,7 @@ describe('SqliteRepoStorage as an @atproto/repo RepoStorage', () => {
     // Build a real repo with one record through @atproto/repo, writing straight
     // into SQLite. This exercises putMany/updateRoot/getBytes/has under load.
     const record = {
-      $type: 'app.omniroute.errorReport',
+      $type: 'com.example.custom.record',
       windowStart: '2026-07-21T00:00:00Z',
       windowEnd: '2026-07-21T00:05:00Z',
       nodeVersion: '1.2.3',
@@ -37,7 +37,7 @@ describe('SqliteRepoStorage as an @atproto/repo RepoStorage', () => {
       [
         {
           action: WriteOpAction.Create,
-          collection: 'app.omniroute.errorReport',
+          collection: 'com.example.custom.record',
           rkey: '3lqrecord0001',
           record,
         },
@@ -53,7 +53,7 @@ describe('SqliteRepoStorage as an @atproto/repo RepoStorage', () => {
 
     // Reload from storage alone and read the record back.
     const reloaded = await Repo.load(storage, root ?? undefined);
-    const got = await reloaded.getRecord('app.omniroute.errorReport', '3lqrecord0001');
+    const got = await reloaded.getRecord('com.example.custom.record', '3lqrecord0001');
     expect(got).toMatchObject({ nodeVersion: '1.2.3' });
 
     // The record block is content-addressed and present.
@@ -82,7 +82,7 @@ describe('SqliteRepoStorage as an @atproto/repo RepoStorage', () => {
   it('records a commit in the commit log via putCommit', async () => {
     const kp = await newKeypair();
     const storage = new SqliteRepoStorage(did);
-    const record = { $type: 'app.omniroute.errorReport', nodeVersion: 'x', entries: [] };
+    const record = { $type: 'com.example.custom.record', nodeVersion: 'x', entries: [] };
     const cid = await cidForRecord(record);
     const bytes = new TextEncoder().encode('fake-commit-block');
     // Use the raw putCommit path with the record CID standing in as the commit.

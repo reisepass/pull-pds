@@ -11,7 +11,7 @@ import { FirehoseService } from '../src/firehose/service.js';
 import { newKeypair } from './helpers.js';
 
 const DID = 'did:web:node.test.example';
-const COLL = 'app.omniroute.errorReport';
+const COLL = 'com.example.custom.record';
 const NOW = '2026-07-21T12:00:00Z';
 
 function feed(n: number, rkey = 'current') {
@@ -123,7 +123,7 @@ describe('FirehoseService', () => {
   });
 });
 
-describe('Filtered subscription (REDESIGN-TASK §3)', () => {
+describe('Filtered subscription', () => {
   const OTHER_COLL = 'app.example.other';
 
   /** Append a #commit-shaped frame whose ops path is `<collection>/x` via the Sequencer (so live listeners fire). */

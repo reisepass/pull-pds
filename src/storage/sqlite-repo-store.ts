@@ -11,7 +11,7 @@ import type { CommitData, RepoStorage } from '@atproto/repo';
 import type { RepoStore, StoredBlock, StoredCommit } from './types.js';
 
 /**
- * SQLite-backed per-repo storage (DESIGN.md open question 2: SQLite per repo).
+ * SQLite-backed per-repo storage.
  *
  * Extends `@atproto/repo`'s `ReadableBlockstore` so it inherits the typed read
  * helpers (`readObj`, `readRecord`, …) and satisfies the `RepoStorage`
@@ -61,7 +61,7 @@ export class SqliteRepoStorage extends ReadableBlockstore implements RepoStore {
         rev  TEXT NOT NULL
       );
     `);
-    // Migration (REDESIGN-TASK §2): older DBs predate created_at on commit_log.
+    // Migration: older DBs predate created_at on commit_log.
     const cols = this.db.prepare(`PRAGMA table_info(commit_log)`).all() as Array<{ name: string }>;
     if (!cols.some((c) => c.name === 'created_at')) {
       this.db.exec(`ALTER TABLE commit_log ADD COLUMN created_at TEXT`);
@@ -233,7 +233,7 @@ export class SqliteRepoStorage extends ReadableBlockstore implements RepoStore {
     return Number(row.n);
   }
 
-  // --- retention (REDESIGN-TASK §2) ------------------------------------------
+  // --- retention ------------------------------------------
   //
   // A repo's `block` table is the LIVE MST (blocks of superseded commits are
   // deleted on each putCommit), so it must never be retention-pruned — only the

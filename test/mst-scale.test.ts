@@ -6,7 +6,7 @@ import { LocalKeyCommitSigner } from '../src/repo/commit-signer.js';
 import { newKeypair } from './helpers.js';
 import type { DesiredRecord } from '../src/repo/diff.js';
 
-const COLL = 'app.omniroute.errorReport';
+const COLL = 'com.example.custom.record';
 const DID = 'did:web:scale.test.example';
 
 function big(count: number, bump = 0): DesiredRecord[] {

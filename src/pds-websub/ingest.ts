@@ -16,7 +16,7 @@ import { log } from '../log.js';
 import { trace, traceEnabled } from '../trace.js';
 
 /**
- * The ingest pipeline (pull-pds-spec.md §5) - the security-critical core.
+ * The ingest pipeline - the security-critical core.
  *
  * Triggered by a WebSub publish ping or a poll tick with a topic URL. Every step
  * is the PDS's own logic; nothing here trusts the ping body beyond using
@@ -66,7 +66,7 @@ export interface IngestDeps {
   /** Optional admission gate; returns a reason string to reject, or null to admit. */
   admit?: (did: string, host: string, collection: string) => string | null;
   /**
-   * Optional per-record lexicon predicate (SPEC-COMPLIANCE §4). null = valid, a
+   * Optional per-record lexicon predicate. null = valid, a
    * string = rejection reason. Passed straight into `parseFeed` so a record that
    * fails its committed lexicon is rejected batch-atomically before the MST.
    */
@@ -240,7 +240,7 @@ export class IngestPipeline {
     }
 
     // Correlation: pull the (seq, emittedAt) each record carries in-band so the
-    // trace can be tied back to the exact ping without a side channel (PHASE-4).
+    // trace can be tied back to the exact ping without a side channel.
     const feedSeqs = traceEnabled() ? extractSeqs(parsed.records) : [];
     trace({ hop: 't_fetch_done', did, seqs: feedSeqs });
 
@@ -362,7 +362,7 @@ function hostAsHandle(identity: ResolvedDidWeb): string | undefined {
   return aka ? aka.slice('at://'.length) : undefined;
 }
 
-/** Pull the in-band `seq` correlation field out of each feed record (PHASE-4). */
+/** Pull the in-band `seq` correlation field out of each feed record. */
 function extractSeqs(records: Array<{ record: Record<string, unknown> }>): number[] {
   const out: number[] = [];
   for (const r of records) {

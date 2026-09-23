@@ -1,0 +1,22 @@
+{
+  "lexicon": 1,
+  "id": "com.example.sensor.reading",
+  "description": "Toy example: one reading from a public sensor, such as an air-quality station. Replace with your own lexicon under a domain you control.",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "any",
+      "record": {
+        "type": "object",
+        "required": ["sensorId", "metric", "value", "unit", "observedAt"],
+        "properties": {
+          "sensorId": { "type": "string", "maxLength": 128, "description": "Publisher-chosen sensor identifier." },
+          "metric": { "type": "string", "maxLength": 64, "description": "What was measured, for example co2 or pm25." },
+          "value": { "type": "integer", "description": "Measured value as an integer in the given unit. DAG-CBOR has no floats, so pick a unit that avoids fractions." },
+          "unit": { "type": "string", "maxLength": 32, "description": "Unit of value, for example ppm or ug/m3." },
+          "observedAt": { "type": "string", "format": "datetime" }
+        }
+      }
+    }
+  }
+}

@@ -46,7 +46,7 @@ function isBlockedV6(ip: string): boolean {
   // Expand to the full 8-hextet numeric form so every encoding of the same
   // address is checked identically. This closes the bypass where an
   // IPv4-mapped/embedded loopback is written in hex (`::ffff:7f00:1`) rather
-  // than dotted-decimal (`::ffff:127.0.0.1`) - FINDINGS F-4.
+  // than dotted-decimal (`::ffff:127.0.0.1`).
   const expanded = expandV6(addr);
   if (!expanded || expanded.length !== 8) return true; // unparseable -> blocked
   const groups = expanded as [number, number, number, number, number, number, number, number];

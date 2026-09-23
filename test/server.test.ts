@@ -15,11 +15,10 @@ import { createServer } from '../src/server/http.js';
  * the SSRF guard dial loopback for this test only.
  */
 
-import { ERROR_METRICS_NSID } from '../src/collections.js';
+import { EXAMPLE_READING_NSID } from '../src/collections.js';
 
-// Exercise the CURRENT OTel-shaped NSID end to end through the lexicon-validated
-// ingest path. Legacy-shape validation is covered separately in ingest.test.ts.
-const COLL = ERROR_METRICS_NSID;
+// Exercise the bundled toy lexicon end to end through the lexicon-validated ingest path.
+const COLL = EXAMPLE_READING_NSID;
 
 let originServer: http.Server;
 let originPort: number;
@@ -91,23 +90,13 @@ beforeAll(async () => {
       {
         collection: COLL,
         rkey: 'current',
-        // Settled canonical shape (REDESIGN-TASK §1); validates against the
-        // committed lexicon so this exercises the SPEC-COMPLIANCE §4 path.
         record: {
           $type: COLL,
-          serviceType: 'llm',
-          'gen_ai.provider.name': 'openai',
-          'gen_ai.request.model': 'gpt-4o',
-          windowStartUnixMicro: 1785000000000000,
-          windowEndUnixMicro: 1785000300000000,
-          errors: [{ code: '429', count: 5 }],
-          totalErrors: 5,
-          requestVolumeBucket: '1K-9.9K',
-          'telemetry.distro.name': 'omniroute',
-          'telemetry.distro.version': '1.0.0',
+          sensorId: 'station-7',
+          metric: 'co2',
+          value: 412,
+          unit: 'ppm',
           observedAt: '2026-07-21T00:00:00.000Z',
-          seq: 1,
-          emittedAt: '2026-07-21T00:00:00.000Z',
         },
       },
     ],
@@ -127,7 +116,6 @@ const topicUrl = () => `https://localhost:${originPort}/atproto/feed.json`;
 // origin serves http. So for this integration test we ingest by calling the
 // PDS's ingest() with a transport that hits the local http origin. That
 // still exercises the whole pipeline, server routing, XRPC, and firehose.
-// (The real-TLS variant runs in experiments/ against p2.0rs.org.)
 import { guardedFetch as _gf } from '../src/net/guarded-fetch.js';
 
 describe('server integration (localhost, http origin)', () => {
@@ -234,8 +222,7 @@ describe('server integration (localhost, http origin)', () => {
       res.headers.forEach((v, k) => headers.set(k, v));
       return { status: res.status, headers, body: buf, url, peerAddress: '127.0.0.1' };
     };
-    // Run one ingest over the local http transport (the real-TLS variant runs
-    // in experiments/ against p2.0rs.org).
+    // Run one ingest over the local http transport.
     const outcome = await ingestViaHttp(pds, topicUrl(), httpTransport);
     expect(outcome?.status).toBe('committed');
 

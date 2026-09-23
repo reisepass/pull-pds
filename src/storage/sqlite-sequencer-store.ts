@@ -2,7 +2,7 @@ import { DatabaseSync } from 'node:sqlite';
 import type { SequencedEvent, SequencerStore } from './types.js';
 
 /**
- * SQLite-backed durable firehose cursor (NEXT-TASK step 4: durable, monotonic,
+ * SQLite-backed durable firehose cursor (durable, monotonic,
  * cursor-resumable). `seq` is an AUTOINCREMENT integer primary key, so it is
  * monotonic across restarts and never reused even after deletes - exactly the
  * guarantee `subscribeRepos` consumers rely on for resumption.
@@ -24,7 +24,7 @@ export class SqliteSequencerStore implements SequencerStore {
         payload BLOB NOT NULL
       );
     `);
-    // Migration (REDESIGN-TASK §2): older DBs predate created_at on event.
+    // Migration: older DBs predate created_at on event.
     const cols = this.db.prepare(`PRAGMA table_info(event)`).all() as Array<{ name: string }>;
     if (!cols.some((c) => c.name === 'created_at')) {
       this.db.exec(`ALTER TABLE event ADD COLUMN created_at TEXT`);
@@ -66,7 +66,7 @@ export class SqliteSequencerStore implements SequencerStore {
   }
 
   /**
-   * Filtered read (REDESIGN-TASK §3): only frames whose CBOR payload mentions
+   * Filtered read: only frames whose CBOR payload mentions
    * one of the wanted collections. The filter runs in SQL over the (small,
    * per-aggregator) event table, so a filtered subscriber never scans the full
    * stream — this is the cheap alternative to one VM consuming the raw global
@@ -98,7 +98,7 @@ export class SqliteSequencerStore implements SequencerStore {
     }));
   }
 
-  // --- retention (REDESIGN-TASK §2) ------------------------------------------
+  // --- retention ------------------------------------------
   //
   // The event table is the durable firehose backfill log — replayable history,
   // not live state — so both age and size pruning are safe: consumers behind the

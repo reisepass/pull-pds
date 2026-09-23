@@ -8,7 +8,7 @@ export interface Clock {
 
 /**
  * Persistent state the admission check reads and writes. Kept as an interface so
- * the storage backend (DESIGN.md open question 2) is not decided here - a caller
+ * the storage backend is not decided here - a caller
  * supplies SQLite, memory, or anything else. All methods are synchronous to keep
  * the policy functions pure and easy to reason about; a real async store can be
  * adapted by the caller or this interface widened later.
@@ -18,7 +18,7 @@ export interface AdmissionStore {
   isKnownDid(did: string): boolean;
   /** The set of distinct DIDs already bound to a registrable domain. */
   didsForRegistrableDomain(domain: string): Set<string>;
-  /** True if the DID is on the denylist / kill switch (DESIGN.md decision, abuse controls). */
+  /** True if the DID is on the denylist / kill switch. */
   isDenied(did: string): boolean;
   /**
    * Timestamps (epoch ms) of recent first-commits from new DIDs on this
@@ -52,8 +52,8 @@ export type AdmissionDenyReason =
  * Decide whether to admit a write. Pure: all side-effecting state comes in
  * through `store` and `clock`. Ordering runs cheapest / hardest-stop first:
  *
- *   1. DID denylist   - the kill switch (DESIGN.md abuse controls).
- *   2. Collection allowlist (DESIGN.md decision 5).
+ *   1. DID denylist   - the kill switch.
+ *   2. Collection allowlist.
  *   3. Registrable domain must exist at all.
  *   4. Per-domain distinct-DID cap.        } only enforced for a *new* DID;
  *   5. Per-domain new-DID rate limit.      } a DID that already committed is

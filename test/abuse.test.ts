@@ -17,7 +17,7 @@ import { newKeypair } from './helpers.js';
 const SELF = 'https://pds.example';
 const HOST = 'node.test.example';
 const DID = `did:web:${HOST}`;
-const COLL = 'app.omniroute.errorReport';
+const COLL = 'com.example.custom.record';
 const TOPIC = `https://${HOST}/atproto/feed.json`;
 
 function res(body: string, headers: Record<string, string> = {}): GuardedResponse {

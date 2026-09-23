@@ -8,11 +8,11 @@ import { DEFAULT_ADMISSION_CONFIG } from '../src/config.js';
  * `didsForRegistrableDomain` and the binding is recorded (`add`) only after the
  * commit. Two *different* new DIDs on the same domain, admitted concurrently
  * (interleaved check-then-add), can both pass a cap of N and push the domain to
- * N+1. The cap is a spam dial, not a security boundary (DESIGN.md), but it should
+ * N+1. The cap is a spam dial, not a security boundary, but it should
  * still hold; this test pins the reserve-based fix.
  */
 
-const COLL = 'app.omniroute.errorReport';
+const COLL = 'com.example.custom.record';
 const clock = { now: () => 1_000_000 };
 const config = { ...DEFAULT_ADMISSION_CONFIG, collectionAllowlist: [COLL], maxDidsPerRegistrableDomain: 1 };
 

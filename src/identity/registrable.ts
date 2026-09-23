@@ -2,7 +2,7 @@ import { parse } from 'tldts';
 
 /**
  * Collapse a did:web host to its registrable domain (eTLD+1) via the Public
- * Suffix List. DESIGN.md section 4: `did:web:a.acme.com` and
+ * Suffix List. `did:web:a.acme.com` and
  * `did:web:b.acme.com` share the registrable unit `acme.com`, but each user on
  * a public-suffix host like `github.io` or a dynamic-DNS provider is its own
  * registrable unit.

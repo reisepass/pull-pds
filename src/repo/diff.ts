@@ -5,7 +5,7 @@ import type { RepoRecord } from '@atproto/lexicon';
 import { cidForRecord } from '@atproto/repo';
 
 /**
- * The snapshot diff engine (pull-pds-spec.md §5 step 6, §3.2).
+ * The snapshot diff engine.
  *
  * A publisher's `feed.json` in snapshot mode is its *complete current desired
  * state*. The aggregator diffs it against what the repo currently holds and

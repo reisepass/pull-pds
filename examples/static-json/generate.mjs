@@ -1,4 +1,5 @@
-// Generate a complete, synthetic snapshot for a fresh publisher identity.
+// Generate a complete, synthetic snapshot for a fresh publisher identity: a toy
+// air-quality station publishing two sensor readings.
 // The static host must serve dot-directories, including /.well-known/.
 import { mkdir, writeFile } from 'node:fs/promises';
 import { resolve, join } from 'node:path';
@@ -13,7 +14,7 @@ for (const url of [endpoint, publisher]) {
 const res = await fetch(new URL('/.well-known/atproto-pull-pds', endpoint), { signal: AbortSignal.timeout(10_000), redirect: 'error' });
 if (!res.ok) throw new Error(`Descriptor request failed: HTTP ${res.status}`);
 const descriptor = await res.json();
-const collection = 'org.peertelemetry.errorMetrics';
+const collection = 'com.example.sensor.reading';
 if (descriptor.atprotoPdsEndpoint !== endpoint.origin || descriptor.ingestMode !== 'snapshot' ||
     !descriptor.allowedCollections?.includes(collection) || typeof descriptor.signingPublicKeyMultibase !== 'string') {
   throw new Error('Descriptor endpoint, snapshot mode, key or collection does not match.');
@@ -31,12 +32,10 @@ const didDoc = {
 };
 const feed = {
   $type: 'app.pullpds.feed', did,
-  records: [{ collection, rkey: 'demo', record: {
-    $type: collection, serviceType: 'llm', 'gen_ai.provider.name': 'synthetic-demo',
-    windowStartUnixMicro: (now.getTime() - 60_000) * 1000, windowEndUnixMicro: now.getTime() * 1000,
-    requestCount: 10, errors: [{ code: '503', count: 1 }], totalErrors: 1,
-    'telemetry.distro.name': 'pull-pds-synthetic-demo', observedAt: now.toISOString(), emittedAt: now.toISOString(),
-  } }],
+  records: [
+    { collection, rkey: 'co2', record: { $type: collection, sensorId: 'demo-station', metric: 'co2', value: 412, unit: 'ppm', observedAt: now.toISOString() } },
+    { collection, rkey: 'pm25', record: { $type: collection, sensorId: 'demo-station', metric: 'pm25', value: 9, unit: 'ug/m3', observedAt: now.toISOString() } },
+  ],
 };
 // Fail instead of silently overwriting an existing publisher's identity/feed.
 await writeFile(join(output, '.well-known/did.json'), JSON.stringify(didDoc, null, 2) + '\n', { flag: 'wx' });

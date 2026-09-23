@@ -5,13 +5,11 @@ import { Lexicons, type LexiconDoc } from '@atproto/lexicon';
 import { log } from '../log.js';
 
 /**
-* Per-record lexicon validation for the ingest path (SPEC-COMPLIANCE §4,
- * closing F-2 / Q6). The feed parser already enforces the collection allowlist,
+* Per-record lexicon validation for the ingest path. The feed parser already enforces the collection allowlist,
  * NSID/rkey syntax, duplicate keys, and "is a JSON object" - but it does NOT
  * check that a record actually matches its committed lexicon. That gap is the
  * only place an unvalidated payload reaches a signed commit: a malformed
- * `org.peertelemetry.errorMetrics` (or legacy `app.omniroute.errorReport`) would
- * be signed and committed. This module closes it with a pure, in-process
+ * record would be signed and committed. This module closes it with a pure, in-process
  * predicate - no network, no round-trips.
  *
  * We use `@atproto/lexicon` (already resident via `@atproto/repo`; measured
@@ -37,11 +35,11 @@ const LEXICON_DIR = findLexiconDir(__dirname);
  * run from `src/pds-websub/` (tests/tsx) or `dist/src/pds-websub/` (the built
  * binary): the `lexicons/` tree is NOT copied into `dist/`, so a fixed relative
  * path is wrong for one of the two. Walk up until an ancestor actually contains
- * a `lexicons/` directory. `NETREPORT_LEXICON_DIR` overrides it explicitly for
+ * a `lexicons/` directory. `LEXICON_DIR` overrides it explicitly for
  * unusual layouts.
  */
 function findLexiconDir(from: string): string {
-  const override = process.env.NETREPORT_LEXICON_DIR?.trim();
+  const override = process.env.LEXICON_DIR?.trim();
   if (override) return override;
   let dir = from;
   for (let i = 0; i < 8; i++) {

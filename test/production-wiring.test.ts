@@ -20,11 +20,10 @@ describe('production dependency wiring', () => {
   it('rejects a whole snapshot with an invalid record before signing anything', async () => {
     const pds = await Pds.create(pdsConfigFromEnv({}, {}));
     const did = 'did:web:publisher.example.com';
-    const collection = 'org.peertelemetry.errorMetrics';
+    const collection = 'com.example.sensor.reading';
     const valid = {
-      $type: collection, serviceType: 'llm', 'gen_ai.provider.name': 'demo',
-      windowStartUnixMicro: 1, windowEndUnixMicro: 2, errors: [], totalErrors: 0,
-      requestCount: 1, 'telemetry.distro.name': 'demo', observedAt: '2026-09-22T00:00:00Z',
+      $type: collection, sensorId: 'station-7', metric: 'co2', value: 412, unit: 'ppm',
+      observedAt: '2026-09-22T00:00:00Z',
     };
     let invalid = true;
     vi.mocked(guardedFetch).mockImplementation(async (url) => ({

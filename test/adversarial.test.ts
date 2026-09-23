@@ -15,9 +15,8 @@ import { newKeypair, multikeyFor } from './helpers.js';
 import type { PdsKey } from '../src/repo/signing-key.js';
 
 /**
- * Adversarial + conformance sweep (ADVERSARIAL-TESTS.md). Each test either pins
- * a defense that already holds, or is a regression guard for a real defect
- * appended to FINDINGS.md (F-12 onward). Nothing here is weakened to pass: a
+ * Adversarial + conformance sweep. Each test either pins a defense that
+ * already holds, or is a regression guard for a real defect. Nothing here is weakened to pass: a
  * test that catches a real bug fails until the bug is fixed.
  *
  * The ingest harness mirrors test/ingest.test.ts so the same IngestPipeline code
@@ -27,7 +26,7 @@ import type { PdsKey } from '../src/repo/signing-key.js';
 const SELF = 'https://agg.example';
 const HOST = 'node.test.example';
 const DID = `did:web:${HOST}`;
-const COLL = 'app.omniroute.errorReport';
+const COLL = 'com.example.custom.record';
 const TOPIC = `https://${HOST}/atproto/feed.json`;
 
 function res(body: string, headers: Record<string, string> = {}): GuardedResponse {

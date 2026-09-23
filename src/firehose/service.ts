@@ -15,7 +15,7 @@ import { RepoManager } from '../repo/repo-manager.js';
 
 /**
  * Turns a persisted commit into the sequence of firehose frames a Sync-1.1
- * consumer expects (pull-pds-spec.md §5 step 9), and appends them through the
+ * consumer expects, and appends them through the
  * durable Sequencer.
  *
  * On the *first* ingest of a repo we emit `#identity`, `#account{active:true}`,
@@ -59,7 +59,7 @@ export class FirehoseService {
           since: commit.since,
           blocks: car,
           ops,
-          prevData: commit.prev, // Sync 1.1 linkage (QUESTIONS.md D3)
+          prevData: commit.prev, // Sync 1.1 linkage
           time: opts.nowIso,
         }),
       ),

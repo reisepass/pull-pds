@@ -3,8 +3,7 @@ import { ensureValidRecordKey, ensureValidNsid } from '@atproto/syntax';
 import type { DesiredRecord } from '../repo/diff.js';
 
 /**
- * Parse + validate a publisher's `feed.json` (pull-pds-spec.md §3.2, snapshot
- * mode). The feed is the complete desired state for the publisher's allowlisted
+ * Parse + validate a publisher's `feed.json` (snapshot mode; see SPEC.md). The feed is the complete desired state for the publisher's allowlisted
  * collections. This module is pure: it turns raw bytes into `DesiredRecord[]` or
  * a typed error. It does NOT decide the diff or touch storage.
  *
@@ -15,7 +14,7 @@ import type { DesiredRecord } from '../repo/diff.js';
  *   - no duplicate `(collection, rkey)` (a snapshot with two values for one key
  *     is ambiguous; reject rather than pick one)
  *   - each `record` is a JSON object AND, when a `validateRecord` predicate is
-*     supplied (SPEC-COMPLIANCE §4), matches its committed lexicon - schema,
+*     supplied, matches its committed lexicon - schema,
  *     types, required fields, and no undeclared top-level fields. A record that
  *     fails is a `lexicon-invalid` FeedError, batch-atomic like every other
  *     rejection: one bad record fails the whole feed and nothing reaches the MST.
@@ -69,7 +68,7 @@ export interface FeedParseOpts {
   allowedCollections: string[];
   maxRecords: number;
   /**
-* Optional per-record lexicon predicate (SPEC-COMPLIANCE §4). Returns null if
+* Optional per-record lexicon predicate. Returns null if
    * the record is valid, or a human-readable reason string to reject it. Runs
    * after structural checks, before the record enters the batch. Injected so
 * Optional per-record lexicon predicate (SECOND-EXAMPLE §Part 2). Returns null
@@ -155,7 +154,7 @@ export function parseFeed(bytes: Uint8Array, opts: FeedParseOpts): ParsedFeed {
       // Reject BEFORE the recursive DAG-CBOR encode in the diff (F-11).
       throw new FeedError('record-too-deep', `record ${collection}/${rkey} nests deeper than ${MAX_RECORD_DEPTH}`);
     }
-    // Deep lexicon validation (SPEC-COMPLIANCE §4): schema/type/required-field +
+    // Deep lexicon validation: schema/type/required-field +
     // no-undeclared-field check against the committed lexicon. Batch-atomic: a
     // single invalid record fails the whole feed, so nothing reaches the MST.
     if (opts.validateRecord) {

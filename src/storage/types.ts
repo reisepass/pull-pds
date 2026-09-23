@@ -2,8 +2,8 @@ import type { CID } from 'multiformats';
 
 /**
  * The durable persistence seam, kept behind an interface the way `AdmissionStore`
- * already is (BRIEF milestone-1, NEXT-TASK step 2). The concrete backend is
- * SQLite-per-repo (DESIGN.md open question 2 recommendation), but nothing above
+ * already is. The concrete backend is
+ * SQLite-per-repo, but nothing above
  * this interface depends on that choice.
  *
  * This is design-neutral: both the self-sign and pull-aggregator models persist
@@ -32,7 +32,7 @@ export interface StoredCommit {
   bytes: Uint8Array;
   /**
    * The did:key that signed this commit, recorded alongside it. did:web has no
-   * audit log (DESIGN.md section 4); this is the only thing that keeps history
+   * audit log; this is the only thing that keeps history
    * checkable after a key rotation. Design-neutral: under the aggregator model
    * it is the aggregator key, under self-sign it is the holder key.
    */
@@ -82,7 +82,7 @@ export interface RepoStore {
 /**
  * The durable, monotonic firehose cursor. One row per emitted event; the
  * sequencer assigns `seq` and this store persists it so a restart resumes
- * exactly where it left off (NEXT-TASK step 4).
+ * exactly where it left off.
  */
 export interface SequencerStore {
   /**
@@ -98,7 +98,7 @@ export interface SequencerStore {
   readSince(cursor: number, limit: number): SequencedEvent[];
 
   /**
-   * Filtered variant of `readSince` (REDESIGN-TASK §3): only events whose frame
+   * Filtered variant of `readSince`: only events whose frame
    * mentions one of `wantedCollections`. Optional — stores that implement it let
    * the sequencer push the collection filter down into the SQL query (cheap)
    * instead of scanning every frame payload in memory.

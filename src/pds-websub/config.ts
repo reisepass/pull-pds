@@ -1,11 +1,10 @@
 import { selfEndpointFromEnv } from '../config.js';
-import { ALL_TELEMETRY_COLLECTIONS } from '../collections.js';
+import { DEFAULT_ALLOWED_COLLECTIONS, BLOCKED_NAMESPACES, isBlockedCollection } from '../collections.js';
 import { log } from '../log.js';
 
 /**
- * Pull-PDS configuration (pull-pds-spec.md §10). Read from the environment with
- * defensible defaults; `SELF_ENDPOINT` overrides the canonical production
- * endpoint `https://p2.0rs.org` (QUESTIONS.md Q5, closed).
+ * Pull-PDS configuration (SPEC.md). Read from the environment with defensible
+ * defaults; `SELF_ENDPOINT` must be set for any real deployment.
  *
  * Env naming: `PDS_*` is canonical. The legacy `AGG_*` names
  * (`AGG_SIGNING_KEY`, `AGG_DID`) from before the pds-websub rename are still
@@ -47,7 +46,7 @@ export function pdsConfigFromEnv(
   const config: PdsConfig = {
     selfEndpoint,
     pdsDid: envAlias(env, 'PDS_DID', 'AGG_DID') ?? derivePdsDid(selfEndpoint),
-    allowedCollections: splitList(env.ALLOWED_COLLECTIONS) ?? [...ALL_TELEMETRY_COLLECTIONS],
+    allowedCollections: splitList(env.ALLOWED_COLLECTIONS) ?? [...DEFAULT_ALLOWED_COLLECTIONS],
     ingestMode: (env.INGEST_MODE?.trim() as 'snapshot' | 'oplog') || 'snapshot',
     maxFeedBytes: numEnv(env.MAX_FEED_BYTES, 1_048_576),
     minPingIntervalSec: numEnv(env.MIN_PING_INTERVAL_SEC, 60),
@@ -69,7 +68,7 @@ function derivePdsDid(endpoint: string): string {
     const u = new URL(endpoint);
     return `did:web:${u.host}`;
   } catch {
-    return 'did:web:p2.0rs.org';
+    return 'did:web:pds.example.invalid';
   }
 }
 
@@ -111,4 +110,8 @@ export function validatePdsConfig(config: PdsConfig): void {
     if (!Number.isSafeInteger(value) || value <= 0) throw new Error(`${name} must be a positive integer.`);
   }
   if (!Number.isFinite(config.minPingIntervalSec) || config.minPingIntervalSec < 0) throw new Error('minPingIntervalSec must be nonnegative.');
+  const blocked = config.allowedCollections.filter(isBlockedCollection);
+  if (blocked.length) {
+    throw new Error(`ALLOWED_COLLECTIONS may not include ${blocked.join(', ')}: a Pull-PDS never accepts ${BLOCKED_NAMESPACES.join(' ')} records.`);
+  }
 }
