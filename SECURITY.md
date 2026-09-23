@@ -6,9 +6,9 @@ This is an experimental, delegated-signing service. The operator can sign for ev
 
 Generate a fresh key for every deployment with `npm run keygen`. The generator creates an owner-readable environment file without printing the secret and refuses to overwrite an existing file. Keep the file outside version control and maintain a protected backup. Persistent PDS storage refuses to start without a supplied key; an ephemeral development key changes on restart.
 
-Early private development history contained deployment keys. Those keys must be treated as compromised. The public source export deliberately starts a fresh Git history and excludes deployment environment files and private experiment notes. Removing secrets from the current tree does not remove them from an older clone, remote branch, tag, log or backup.
+Never commit a signing key. `npm run check:secrets` scans tracked files for key-shaped values, and `.gitignore` excludes environment files other than `*.example`. Removing a committed key from the current tree does not remove it from history, clones, logs, or backups; rotate it instead.
 
-For a live rotation: inventory every DID delegating to the old key; pause ingestion; back up databases and identity documents; generate a fresh key; plan and test repository re-signing/resync or move the demo to fresh identities; update the PDS and affected DID documents coherently; verify fresh commits from an independent reader and relay; then resume publication. Preserve an audit trail. A new environment value alone cannot make existing commits verify under a new key.
+For a live rotation: inventory every DID delegating to the old key; pause ingestion; back up databases and identity documents; generate a fresh key; plan and test repository re-signing/resync or move publishers to fresh identities; update the PDS and affected DID documents coherently; verify fresh commits from an independent reader and relay; then resume publication. Preserve an audit trail. A new environment value alone cannot make existing commits verify under a new key.
 
 The public release preparation does not itself rotate any running deployment.
 

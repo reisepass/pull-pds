@@ -17,7 +17,7 @@ PUBLISHER_OUTPUT=/tmp/pull-pds-publisher-site \
 npm run example:generate
 ```
 
-This reads the PDS descriptor and creates three public resources: a DID document, a handle-to-DID response, and a complete synthetic error-metrics snapshot. The command prints the absolute output directory and refuses to overwrite existing files. Its record names the provider `synthetic-demo` and the emitter `pull-pds-synthetic-demo`.
+This reads the PDS descriptor and creates three public resources: a DID document, a handle-to-DID response, and a snapshot with two synthetic readings from a toy air-quality station (`com.example.sensor.reading`). The command prints the absolute output directory and refuses to overwrite existing files.
 
 Publish the generated directory at the root of your static HTTPS host. The host must serve these URLs without authentication:
 
@@ -64,5 +64,3 @@ Edit the hosted snapshot with a new observation and send the same notification. 
 ## Public-network demonstration
 
 Ask a relay to crawl the public PDS using that relay's supported request-crawl endpoint, then watch for the publisher DID and commit CID in its stream. Record the observation time and distinguish relay output from reads directly against your PDS. Relay onboarding and acceptance are external policies, not guaranteed by a 202 or successful direct read.
-
-The included AppView uses the legacy Jetstream JSON notification protocol with repeated `wantedCollections` parameters, then verifies signed proofs from the source PDS. Upstream documentation: https://github.com/bluesky-social/jetstream-legacy#consuming-jetstream. It has not been migrated to the newer Jetstream archive protocol.

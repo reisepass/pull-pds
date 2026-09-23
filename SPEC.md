@@ -17,7 +17,7 @@ The service endpoint must exactly equal the configured PDS endpoint, and the adv
   "signingPublicKeyMultibase": "<public Multikey>",
   "atprotoPdsEndpoint": "https://pds.example.com",
   "hub": "https://pds.example.com/websub",
-  "allowedCollections": ["org.peertelemetry.errorMetrics"],
+  "allowedCollections": ["com.example.sensor.reading"],
   "feedSchema": "app.pullpds.feed",
   "ingestMode": "snapshot",
   "maxFeedBytes": 1048576,
@@ -37,18 +37,14 @@ The topic URL is an HTTPS resource on the publisher's own hostname. Its JSON bod
   "did": "did:web:publisher.example.com",
   "records": [
     {
-      "collection": "org.peertelemetry.errorMetrics",
-      "rkey": "demo",
+      "collection": "com.example.sensor.reading",
+      "rkey": "co2",
       "record": {
-        "$type": "org.peertelemetry.errorMetrics",
-        "serviceType": "llm",
-        "gen_ai.provider.name": "synthetic-demo",
-        "windowStartUnixMicro": 1790078400000000,
-        "windowEndUnixMicro": 1790078460000000,
-        "requestCount": 10,
-        "errors": [{"code": "503", "count": 1}],
-        "totalErrors": 1,
-        "telemetry.distro.name": "pull-pds-synthetic-demo",
+        "$type": "com.example.sensor.reading",
+        "sensorId": "demo-station",
+        "metric": "co2",
+        "value": 412,
+        "unit": "ppm",
         "observedAt": "2026-09-22T12:01:00Z"
       }
     }
@@ -56,9 +52,9 @@ The topic URL is an HTTPS resource on the publisher's own hostname. Its JSON bod
 }
 ```
 
-The records array is the complete desired state, not a patch. Omission deletes an existing record. Duplicate collection/key pairs, invalid NSIDs or record keys, non-object records, excessive nesting, unsafe or fractional numbers, and unallowlisted collections reject the batch. Bundled lexicons additionally enforce their schemas and reject undeclared top-level fields. Custom allowlisted collections without bundled schemas receive structural checks only.
+The records array is the complete desired state, not a patch. Omission deletes an existing record. Duplicate collection/key pairs, invalid NSIDs or record keys, non-object records, excessive nesting, unsafe or fractional numbers, and unallowlisted collections reject the batch. Bundled lexicons additionally enforce their schemas and reject undeclared top-level fields. Custom allowlisted collections without bundled schemas receive structural checks only. Collections under `app.bsky.`, `chat.bsky.`, `com.atproto.`, and `tools.ozone.` can never be allowlisted: configuration fails if they are listed.
 
-JSON numbers must be safe integers for DAG-CBOR encoding. Telemetry window fields use microseconds, not nanoseconds. The feed is not itself signed by the publisher; HTTPS origin binding authenticates its retrieval, and the PDS signs the resulting repository.
+JSON numbers must be safe integers for DAG-CBOR encoding, so choose units that avoid fractions. The feed is not itself signed by the publisher; HTTPS origin binding authenticates its retrieval, and the PDS signs the resulting repository.
 
 ## Notification and ingestion
 
