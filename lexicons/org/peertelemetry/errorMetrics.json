@@ -1,0 +1,144 @@
+{
+  "lexicon": 1,
+  "id": "org.peertelemetry.errorMetrics",
+  "description": "Peer Telemetry: peer-published reliability telemetry about digital service providers. Vendor-neutral, OpenTelemetry-shaped provider error-rate telemetry for ANY digital service provider (LLM APIs, ISPs, cloud, databases, CDNs, payment providers, ...), keyed by serviceType. NOT an OpenTelemetry or CNCF project; we adopt OTel GenAI attribute NAMES and pin to a commit, no affiliation. Renamed from app.omniroute.errorReport (OTEL-TASK Part 2) then re-homed from the never-published interim org.llmtelemetry.errorMetrics to org.peertelemetry.errorMetrics (AUTHORITY-FINAL / NAME-FINAL2). Adopts OTel GenAI semantic-convention attribute NAMES (OTEL-COMPAT.md, OTEL-DECISIONS.md): gen_ai.provider.name, gen_ai.request.model, telemetry.distro.name/version. One record per aggregated export window per (provider, model); rkey is typically the provider name so a window update is an idempotent update on the same key. Counts and volume only - no prompts, request/response bodies, or PII. Timestamps are microseconds since the Unix epoch (a lexicon integer stays a safe JS integer until ~2255; OTel's fixed64 time_unix_nano nanoseconds would exceed Number.MAX_SAFE_INTEGER and cannot round-trip - we drop sub-microsecond precision deliberately). errors[] carries ONLY provider-side HEALTH codes (provider throttling/rate limiting, 5xx backend failures, provider overload, timeouts, upstream capacity failures); consumer-side account-scoped codes (out of credits/quota, billing, invalid/expired credentials, auth, account suspended, spend caps, malformed requests) are filtered by the publisher BEFORE signing and never enter a record - whether the provider is Anthropic or Deutsche Telekom. Codes the classifier did not recognise go to the visible unclassified[] bucket, never silently dropped. Request volume is the EXACT attempt count for the window (requestCount) alongside the window bounds, so a consumer can compute both a per-request error rate and a rate per unit time; the earlier COARSE requestVolumeBucket is still read for records signed before requestCount existed, and a publisher unwilling to disclose exact scale may emit it alone. Precise token and cost totals remain in the separate opt-in org.peertelemetry.usageMetrics collection (USAGE-STATS-DESIGN.md).",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "any",
+      "description": "One aggregated-window provider error-metrics record. rkey is typically the provider name.",
+      "record": {
+        "type": "object",
+        "required": [
+          "serviceType",
+          "gen_ai.provider.name",
+          "windowStartUnixMicro",
+          "windowEndUnixMicro",
+          "errors",
+          "totalErrors",
+          "telemetry.distro.name",
+          "observedAt"
+        ],
+        "properties": {
+          "serviceType": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The kind of digital service provider this record measures. OPEN vocabulary (documented known values, NOT a closed enum, so new categories need no lexicon revision): \"llm\", \"isp\", \"cloud\", \"database\", \"cdn\", \"payment\", \"other\". Consumers MUST preserve and pass through unknown values rather than dropping them. The scope is any digital service provider whose reliability is measured by its consumers; the ISP use case (consumer internet quality) is THIS schema with serviceType=\"isp\", not a separate schema."
+          },
+          "gen_ai.provider.name": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "The upstream provider being measured. For serviceType=llm this is the OTel GenAI gen_ai.provider.name (stability: Development) with well-known values openai, anthropic, aws.bedrock, azure.ai.openai, gcp.gemini, gcp.vertex_ai, cohere, mistral_ai, groq, x_ai; for other serviceTypes it is the provider identifier in that domain (e.g. an ISP or cloud provider name). Free-form. The OTel field name is kept even for non-LLM providers so consumers have one provider key across serviceTypes."
+          },
+          "gen_ai.request.model": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "OTel GenAI gen_ai.request.model (stability: Development). Model identifier requested within the provider, e.g. \"gpt-4o\". Applies to serviceType=llm; omit for providers that have no model dimension (e.g. an ISP)."
+          },
+          "windowStartUnixMicro": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Aggregation window start, MICROSECONDS since the Unix epoch. Microseconds (not OTel's fixed64 nanoseconds) because nanoseconds exceed Number.MAX_SAFE_INTEGER (~9.007e15) and the AT data-model CBOR encoder rejects non-safe integers; microseconds stay safe until ~2255. Sub-microsecond precision is dropped deliberately."
+          },
+          "windowEndUnixMicro": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Aggregation window end, MICROSECONDS since the Unix epoch. See windowStartUnixMicro for the unit rationale."
+          },
+          "errors": {
+            "type": "array",
+            "maxLength": 64,
+            "description": "PROVIDER-HEALTH error codes observed in the window with per-code counts - throttling/rate-limit, backend 5xx, provider overload (e.g. anthropic 529), and timeouts. Account-scoped codes (insufficient_quota, invalid_api_key, content_policy_violation, context_length_exceeded, ...) are filtered by the publisher before signing and MUST NOT appear here. `code` is a provider error-code/error-type string aligned to OTel's shared error.type. Sums to totalErrors.",
+            "items": {
+              "type": "ref",
+              "ref": "#errorCodeCount"
+            }
+          },
+          "unclassified": {
+            "type": "array",
+            "maxLength": 64,
+            "description": "Codes the per-provider classification table did not recognise as either health or account. Kept VISIBLE (never silently dropped) so a provider renaming an error code surfaces here instead of vanishing from the health signal. Not summed into totalErrors.",
+            "items": {
+              "type": "ref",
+              "ref": "#errorCodeCount"
+            }
+          },
+          "totalErrors": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Total provider-HEALTH errored requests in the window (sum of errors[].count). Excludes account-scoped and unclassified codes."
+          },
+          "requestVolumeBucket": {
+            "type": "string",
+            "enum": [
+              "0",
+              "1-9",
+              "10-99",
+              "100-999",
+              "1K-9.9K",
+              "10K-99K",
+              "100K-999K",
+              "1M-9.9M",
+              "10M+"
+            ],
+            "description": "COARSE order-of-magnitude request-attempt volume for the window. SUPERSEDED by requestCount, which carries the exact number; retained because records signed under the earlier schema carry it in immutable bytes forever and a consumer must still read them. A publisher emits requestCount, requestVolumeBucket, or both - but a record with NEITHER has no denominator and its totalErrors cannot be turned into a rate. This is a BUCKET, never an exact count; a consumer must treat a rate derived from it as approximate."
+          },
+          "telemetry.distro.name": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "OTel telemetry.distro.name (stability: Stable). Which software produced this record. REQUIRED - a record with no emitter is unattributable exactly when two integrations disagree. Documented convention for known emitters: \"omniroute\", \"litellm\"; custom integrations set their own free-form name."
+          },
+          "telemetry.distro.version": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "OTel telemetry.distro.version (stability: Stable). Version of the emitting software, so consumers can segment by classification fidelity and known bugs across emitter versions."
+          },
+          "totalErrorsAllScopes": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Optional. Total errors of ALL scopes observed before the account-scoped filter, if the publisher chooses to disclose it. Lets a consumer see the health-error fraction without leaking WHICH account-scoped codes occurred. Omit to disclose nothing beyond health errors."
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the reporting node observed this state. ISO-8601 (ms); a millisecond datetime is a safe integer as epoch-ms and needs no microsecond treatment."
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Monotonic per-publisher correlation sequence (PHASE-4). Part of the signed record; not a side channel."
+          },
+          "emittedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "ISO-8601 (ms) mutation time, stamped by the publisher at write. Correlation field (PHASE-4)."
+          },
+          "requestCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "EXACT request-attempt count for the window - the DENOMINATOR, so a consumer can compute a precise error RATE (100/100 and 100/1000000 are opposite signals). Counts every attempt the publisher observed in [windowStartUnixMicro, windowEndUnixMicro), successes and failures alike, for this (provider, model). Pair it with the window bounds to get a rate per unit time as well as per request. SUPERSEDES requestVolumeBucket, which remains readable for records signed before this field existed. Publishing an exact count discloses this publisher’s real scale for this provider and model - that is a deliberate trade of disclosure for a denominator a consumer can actually divide by, and it is why the field is OPTIONAL: a publisher that does not want to disclose scale emits requestVolumeBucket alone."
+          }
+        }
+      }
+    },
+    "errorCodeCount": {
+      "type": "object",
+      "required": [
+        "code",
+        "count"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "maxLength": 64,
+          "description": "Provider error-code/error-type string, aligned to OTel's shared error.type value, e.g. \"429\", \"503\", \"529\", \"rate_limit_exceeded\", \"overloaded_error\", \"ThrottlingException\". Look it up in that provider's docs."
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many times this code was observed in the window."
+        }
+      }
+    }
+  }
+}

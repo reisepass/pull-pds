@@ -1,0 +1,38 @@
+{
+  "name": "pull-pds",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A did:web pull-model PDS (pds-websub): publishers host static feeds, ping over WebSub; the PDS pulls, signs, and serves a standard atproto repo",
+  "type": "module",
+  "engines": {
+    "node": ">=22.13.0"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "start": "node dist/src/server/index.js",
+    "prober": "node dist/src/prober/main.js",
+    "keygen": "node scripts/generate-key.mjs",
+    "example:generate": "node examples/static-json/generate.mjs",
+    "example:verify": "node examples/static-json/verify.mjs",
+    "appview": "node dist/src/appview/main.js",
+    "check:secrets": "node scripts/check-secrets.mjs"
+  },
+  "dependencies": {
+    "@atproto/crypto": "^0.4.4",
+    "@atproto/repo": "^0.8.4",
+    "@atproto/syntax": "^0.5.4",
+    "@types/ws": "^8.18.1",
+    "multiformats": "^9.9.0",
+    "tldts": "^6.1.85",
+    "winston": "^3.17.0",
+    "ws": "^8.21.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.3",
+    "typescript": "^5.8.3",
+    "vitest": "^3.2.4"
+  },
+  "license": "MIT"
+}

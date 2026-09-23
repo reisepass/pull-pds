@@ -1,0 +1,110 @@
+{
+  "lexicon": 1,
+  "id": "org.peertelemetry.usageMetrics",
+  "description": "Peer Telemetry: peer-published reliability telemetry about digital service providers. Vendor-neutral, OpenTelemetry-shaped USAGE telemetry for ANY digital service provider (keyed by serviceType): precise per-(provider, model) request and token volume plus latency percentiles over a publisher-chosen window. NOT an OpenTelemetry or CNCF project; we adopt OTel GenAI attribute NAMES and pin to a commit, no affiliation. Re-homed from the never-published interim org.llmtelemetry.usageMetrics to org.peertelemetry.usageMetrics (AUTHORITY-FINAL / NAME-FINAL2). A SEPARATE, higher-disclosure OPT-IN collection from org.peertelemetry.errorMetrics because the consent boundary differs: usage reveals your scale, model mix, and by inference your spend and product direction, whereas errors are a shared low-sensitivity 'the provider is broken' signal. A publisher opts into errors, usage, or both; atproto per-collection wantedCollections filtering makes this free. See USAGE-STATS-DESIGN.md. THE HARD PROBLEM is sybil: these numbers are SELF-REPORTED, so anyone can stand up a did:web and claim any volume. The defense is not prevention but ATTRIBUTION - every number is signed and attributable, and consumers choose whose numbers to count (publisher allowlist / reputation weighting). There is no canonical ranking; an AppView publishes 'ranking across THESE attested publishers' and always emits the publisher set. Adopts OTel GenAI usage names verbatim: gen_ai.usage.input_tokens, gen_ai.usage.output_tokens (stability: Development). Latency is PERCENTILES only, never means (a mean across a heavy tail misleads). Timestamps are microseconds since the epoch (safe integers; see errorMetrics for the nanosecond rationale). Counts here are PRECISE (unlike the errors tier's coarse bucket); a publisher choosing longer windows and this tier's exactness trades disclosure for fidelity deliberately.",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "any",
+      "description": "One usage-metrics record per aggregated window per (provider, model). rkey is typically the provider name (or provider+model) so a window update is idempotent.",
+      "record": {
+        "type": "object",
+        "required": [
+          "serviceType",
+          "gen_ai.provider.name",
+          "windowStartUnixMicro",
+          "windowEndUnixMicro",
+          "operationCount",
+          "telemetry.distro.name",
+          "observedAt"
+        ],
+        "properties": {
+          "serviceType": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "The kind of digital service provider this record measures. OPEN vocabulary (documented known values, NOT a closed enum): \"llm\", \"isp\", \"cloud\", \"database\", \"cdn\", \"payment\", \"other\". Consumers MUST preserve and pass through unknown values rather than dropping them. The ISP use case (consumer internet quality: speed tests and downtime) is THIS schema with serviceType=\"isp\", not a separate schema."
+          },
+          "gen_ai.provider.name": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "The upstream provider being measured. For serviceType=llm this is the OTel GenAI gen_ai.provider.name (stability: Development, values openai, anthropic, aws.bedrock, gcp.gemini, ...); for other serviceTypes it is the provider identifier in that domain. Free-form."
+          },
+          "gen_ai.request.model": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "OTel GenAI gen_ai.request.model (stability: Development). Model identifier, e.g. \"gpt-4o\". Applies to serviceType=llm; omit for providers with no model dimension (e.g. an ISP). No longer required, since the scope is any digital service provider."
+          },
+          "windowStartUnixMicro": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Aggregation window start, MICROSECONDS since the Unix epoch (safe integer; nanoseconds would exceed Number.MAX_SAFE_INTEGER)."
+          },
+          "windowEndUnixMicro": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Aggregation window end, MICROSECONDS since the Unix epoch. Publisher chooses the window length; longer windows reduce disclosure."
+          },
+          "operationCount": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "PRECISE count of GenAI operations (requests) in the window. This is the count component of OTel's gen_ai.client.operation.duration histogram, carried as a scalar. Precise here by design (this is the higher-disclosure tier); the errorMetrics tier carries only a coarse bucket."
+          },
+          "gen_ai.usage.input_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "OTel GenAI gen_ai.usage.input_tokens (stability: Development). Total input (prompt) tokens across all operations in the window. Note: this REPLACED the deprecated gen_ai.usage.prompt_tokens."
+          },
+          "gen_ai.usage.output_tokens": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "OTel GenAI gen_ai.usage.output_tokens (stability: Development). Total output (completion) tokens across all operations in the window. Note: this REPLACED the deprecated gen_ai.usage.completion_tokens."
+          },
+          "latencyMsP50": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Operation-duration p50 (median) in MILLISECONDS over the window. PERCENTILES only - no mean is carried, because a mean over a heavy-tailed latency distribution misleads (USAGE-STATS §5). Milliseconds are a safe integer."
+          },
+          "latencyMsP90": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Operation-duration p90 in milliseconds over the window."
+          },
+          "latencyMsP99": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Operation-duration p99 in milliseconds over the window."
+          },
+          "telemetry.distro.name": {
+            "type": "string",
+            "maxLength": 128,
+            "description": "OTel telemetry.distro.name (stability: Stable). Which software produced this record (\"omniroute\", \"litellm\", or a custom emitter). REQUIRED - a self-reported number with no emitter is doubly unattributable."
+          },
+          "telemetry.distro.version": {
+            "type": "string",
+            "maxLength": 64,
+            "description": "OTel telemetry.distro.version (stability: Stable). Version of the emitting software."
+          },
+          "kAnonRare": {
+            "type": "boolean",
+            "description": "Publisher-set advisory flag: true if the publisher believes it may be the ONLY reporter for this (provider, model) and is therefore deanonymizable regardless of domain choice (USAGE-STATS §4 k-anonymity risk). Advisory only; consumers may down-weight or suppress rare-model usage."
+          },
+          "observedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "When the reporting node observed this state. ISO-8601 (ms)."
+          },
+          "seq": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Monotonic per-publisher correlation sequence (PHASE-4). Part of the signed record."
+          },
+          "emittedAt": {
+            "type": "string",
+            "format": "datetime",
+            "description": "ISO-8601 (ms) mutation time, stamped by the publisher at write (PHASE-4)."
+          }
+        }
+      }
+    }
+  }
+}

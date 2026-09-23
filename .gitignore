@@ -1,0 +1,30 @@
+node_modules/
+dist/
+*.log
+.DS_Store
+coverage/
+.env
+# Prober credentials (the .example file is the committed one). The prober config
+# itself never holds a key - it only names an env var or a file path.
+deploy/prober.env
+
+# Local agent/session artifacts, never part of the source tree
+.claude-command-log.jsonl
+prompt_history.txt
+__pycache__/
+*.pyc
+# Nested checkout, not a submodule of this repo
+OmniRoute/
+
+# Local deployments, generated publisher content, and databases
+*.env
+.env.*
+!*.env.example
+!*.example
+publisher-site/
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+# Preserve local investigation inputs outside version control
+*-errorlogs.md
+js-sample.mjs
