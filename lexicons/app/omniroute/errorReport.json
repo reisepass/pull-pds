@@ -1,0 +1,59 @@
+{
+  "lexicon": 1,
+  "id": "app.omniroute.errorReport",
+  "description": "DEPRECATED, renamed to org.llmtelemetry.errorMetrics (OTEL-TASK, see MIGRATION.md). This file is KEPT and still read forever because every record already published under this NSID is signed and immutable and can never be rewritten (permanent dual-read). New publishers emit org.llmtelemetry.errorMetrics with OTel GenAI field names; this schema is retained only so legacy records keep validating and rendering. Provider error statistics emitted by an OmniRoute node. Counts and latency percentiles only - no prompts, request/response bodies, or PII. The canonical record shape (Q6 CLOSED, REDESIGN-TASK §1): a flat per-provider status record reporting the SPECIFIC provider error codes observed in the window - codes a human can look up in that provider's docs (HTTP status + provider-specific, e.g. 429 rate_limit, 503, 500, anthropic 529 overloaded, openai 429 insufficient_quota) - instead of an abstract circuit-breaker state. The `circuitBreaker` open/closed concept is gone. Records carry in-band correlation fields (`seq`, `emittedAt`) so an AppView can tie an indexed record back to the exact ping that caused it with no side channel (PHASE-4 §3). This is the shape publishers emit today and the one the ingest path validates against (SPEC-COMPLIANCE §4 / F-2 closed).",
+  "defs": {
+    "main": {
+      "type": "record",
+      "key": "any",
+      "description": "Flat per-provider status record (pull-pds-spec.md §3.2 shape, error-code redesign). One record per (provider, model) observed in the window; rkey is typically the provider name.",
+      "record": {
+        "type": "object",
+        "required": ["provider", "window", "errors", "totalErrors", "observedAt"],
+        "properties": {
+          "provider": { "type": "string", "maxLength": 128, "description": "Upstream provider, e.g. \"openai\"." },
+          "model": { "type": "string", "maxLength": 128, "description": "Model identifier within the provider." },
+          "window": { "type": "string", "maxLength": 16, "description": "Aggregation window label, e.g. \"5m\"." },
+          "errors": {
+            "type": "array",
+            "maxLength": 64,
+            "description": "Specific error codes observed in the window with per-code counts. `code` is the provider-facing status or error code (\"429\", \"503\", \"529\", \"insufficient_quota\", ...). Sums to `totalErrors`.",
+            "items": { "type": "ref", "ref": "#errorCodeCount" }
+          },
+          "totalErrors": { "type": "integer", "minimum": 0, "description": "Total errored requests in the window (sum of `errors[].count`)." },
+          "observedAt": { "type": "string", "format": "datetime", "description": "When the reporting node observed this state." },
+          "seq": { "type": "integer", "minimum": 0, "description": "Monotonic per-publisher correlation sequence (PHASE-4). Part of the signed record; not a side channel." },
+          "emittedAt": { "type": "string", "format": "datetime", "description": "ISO-8601 (ms) mutation time, stamped by the publisher at write. Correlation field (PHASE-4)." }
+        }
+      }
+    },
+    "statusReport": {
+      "type": "object",
+      "description": "Deprecated alias of `main`'s record shape, kept as a named ref for any consumer still importing `app.omniroute.errorReport#statusReport`. Identical fields to `main`.",
+      "required": ["provider", "window", "errors", "totalErrors", "observedAt"],
+      "properties": {
+        "provider": { "type": "string", "maxLength": 128, "description": "Upstream provider, e.g. \"openai\"." },
+        "model": { "type": "string", "maxLength": 128, "description": "Model identifier within the provider." },
+        "window": { "type": "string", "maxLength": 16, "description": "Aggregation window label, e.g. \"5m\"." },
+        "errors": {
+          "type": "array",
+          "maxLength": 64,
+          "description": "Specific error codes observed in the window with per-code counts. Sums to `totalErrors`.",
+          "items": { "type": "ref", "ref": "#errorCodeCount" }
+        },
+        "totalErrors": { "type": "integer", "minimum": 0, "description": "Total errored requests in the window (sum of `errors[].count`)." },
+        "observedAt": { "type": "string", "format": "datetime", "description": "When the reporting node observed this state." },
+        "seq": { "type": "integer", "minimum": 0, "description": "Monotonic per-publisher correlation sequence (PHASE-4)." },
+        "emittedAt": { "type": "string", "format": "datetime", "description": "ISO-8601 (ms) mutation time, stamped by the publisher at write (PHASE-4)." }
+      }
+    },
+    "errorCodeCount": {
+      "type": "object",
+      "required": ["code", "count"],
+      "properties": {
+        "code": { "type": "string", "maxLength": 64, "description": "Provider-facing error code, e.g. \"429\", \"503\", \"529\", \"insufficient_quota\". Look it up in that provider's docs." },
+        "count": { "type": "integer", "minimum": 0, "description": "How many times this code was observed in the window." }
+      }
+    }
+  }
+}
