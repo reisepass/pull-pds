@@ -1,28 +1,33 @@
 # Pull-PDS
 
-**Publish static JSON into AT Protocol repositories with a WebSub ping.**
+**Let an application write to AT Protocol using only a web domain it controls: no PDS to run, no account, no password, no captcha, no WebSocket.**
 
-Pull-PDS is an experimental PDS for small, public data publishers. A publisher serves a DID document and a JSON snapshot from an HTTPS origin. A shared server fetches that snapshot, validates it, signs repository commits, and exposes AT Protocol sync endpoints and a firehose.
+Pull-PDS is an experimental shared PDS for machine publishers such as telemetry exporters, monitoring probes, CI jobs, and data pipelines. Today, getting records onto AT Protocol means either running your own PDS or signing up for an account on someone else's, with a handle, email, password, and often a captcha. Both are awkward for a program that just wants to publish data.
 
-The idea is to reduce publisher-side machinery: static hosting and a notification instead of running a repository server for every publisher. The shared PDS still needs hosting, storage, bandwidth, backups, and an operator. We have not demonstrated a general cost advantage over other PDS implementations.
+The key idea is that **identity and data come from the same web origin**. A publisher's identity is `did:web:data.example.org`, which resolves to `https://data.example.org/.well-known/did.json`. Its records are a JSON file on that same host. Whoever controls the domain controls both, so fetching the records over HTTPS from the identity's own domain is the authentication. No signup, credentials, or session are needed.
+
+The publisher serves those two files and sends a one-line HTTP notification (a WebSub ping). The shared Pull-PDS fetches the file, validates the records, signs them into a standard AT Protocol repository, and serves them to relays, AppViews, and anyone else through the normal sync endpoints and firehose.
 
 ```text
-publisher HTTPS origin → WebSub notification → Pull-PDS fetch + validate
-                                            → signed repository + firehose
-                                            → relay / independent reader
+data.example.org serves did.json + feed.json
+        → HTTP ping to the Pull-PDS
+        → Pull-PDS fetches feed.json from that same domain and validates it
+        → signed repository + firehose → relays / apps / independent readers
 ```
+
+The shared PDS still needs hosting, storage, bandwidth, backups, and an operator, and it holds the signing key for every publisher that delegates to it (see [Trust and limits](#trust-and-limits)). We have not demonstrated a general cost advantage over other PDS implementations.
 
 ## Who might use this
 
-Pull-PDS fits publishers whose data is small, public, changes on a schedule, and can already be served as a static file:
+Pull-PDS fits programs and organizations that produce small, public data on a schedule and can serve a file from a domain they control:
 
+- **Telemetry and monitoring**: exporters and probes publishing aggregated observations, such as network reachability or API error counts, each under its own domain, so anyone can index and compare them. The demo below uses this case with synthetic data.
 - **Open-data publishers**: a city publishing transit disruptions, air-quality readings, or reservoir levels from the same static site that hosts its open-data portal.
 - **Research and benchmark results**: a lab or leaderboard publishing evaluation scores as signed, attributable records that anyone can index, instead of a table on a web page.
 - **Project release feeds**: an open-source project publishing releases, changelogs, or security advisories from its documentation site.
 - **Community listings**: a club, venue, or meetup group publishing an event calendar without running a server.
-- **Measurement collectives**: groups that pool aggregated observations, such as network reachability or API error counts, where each member publishes under its own domain. The demo below uses this case with synthetic data.
 
-In each case the publisher keeps a static host and a domain, and gets AT Protocol records that apps, feeds, and indexers can consume. The records use custom collections, so they do not automatically appear as posts in the Bluesky app; an app has to be built to read them.
+In each case the publisher needs only a web host and a domain, and gets AT Protocol records that apps, feeds, and indexers can consume. The records use custom collections, so they do not automatically appear as posts in the Bluesky app; an app has to be built to read them.
 
 ## See it working
 
