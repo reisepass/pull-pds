@@ -159,6 +159,28 @@ describe('server integration (localhost, http origin)', () => {
     expect(body.availableUserDomains).toEqual([]);
   });
 
+  it('public reads allow cross-origin browser access (repo inspectors)', async () => {
+    const base = `http://127.0.0.1:${aggPort}`;
+    const origin = { origin: 'https://inspector.example' };
+    const read = await fetch(`${base}/xrpc/com.atproto.server.describeServer`, { headers: origin });
+    expect(read.headers.get('access-control-allow-origin')).toBe('*');
+    const wellKnown = await fetch(`${base}/.well-known/atproto-pull-pds`, { headers: origin });
+    expect(wellKnown.headers.get('access-control-allow-origin')).toBe('*');
+
+    const preflight = await fetch(`${base}/xrpc/com.atproto.repo.getRecord`, {
+      method: 'OPTIONS',
+      headers: { ...origin, 'access-control-request-method': 'GET', 'access-control-request-headers': 'atproto-accept-labelers' },
+    });
+    expect(preflight.status).toBe(204);
+    expect(preflight.headers.get('access-control-allow-origin')).toBe('*');
+    expect(preflight.headers.get('access-control-allow-methods')).toContain('GET');
+    expect(preflight.headers.get('access-control-allow-headers')).toBe('atproto-accept-labelers');
+
+    // The WebSub hub is a server-to-server endpoint and gets no CORS grant.
+    const hub = await fetch(`${base}/websub`, { method: 'POST', headers: origin, body: 'hub.mode=bogus' });
+    expect(hub.headers.get('access-control-allow-origin')).toBeNull();
+  });
+
   it('a malformed/oversized did param is a clean 400, not a 500 (F-9)', async () => {
     const hugeDid = `did:web:${'a'.repeat(5000)}`;
     const r = await fetch(`http://127.0.0.1:${aggPort}/xrpc/com.atproto.sync.getRepo?did=${encodeURIComponent(hugeDid)}`);

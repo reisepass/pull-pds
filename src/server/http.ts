@@ -113,6 +113,23 @@ async function handle(
   const path = url.pathname;
   const q = url.searchParams;
 
+  // --- CORS for the public read surface ---
+  // XRPC reads and well-known documents are public, unauthenticated data, so
+  // browser-based tools (repo inspectors, AppViews) may read them from any
+  // origin. No credentials are ever involved, so a wildcard origin is safe.
+  if (path.startsWith('/xrpc/') || path.startsWith('/.well-known/')) {
+    res.setHeader('access-control-allow-origin', '*');
+    if (req.method === 'OPTIONS') {
+      res.writeHead(204, {
+        'access-control-allow-methods': 'GET, HEAD, OPTIONS',
+        'access-control-allow-headers': req.headers['access-control-request-headers'] ?? '*',
+        'access-control-max-age': '86400',
+      });
+      res.end();
+      return;
+    }
+  }
+
   // --- descriptor (spec §2.3) ---
   // `atproto-pull-pds` is canonical; `atproto-pull-aggregator` is the legacy
   // pre-rename path, still served IDENTICALLY as a deprecated alias so
